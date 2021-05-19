@@ -187,7 +187,6 @@ func refreshRoomInformation(bridge *Bridge, number string) {
 
 func refresh(bridge *Bridge) {
 	totalNumberOfDevices := refreshSystemInformation(bridge)
-	totalNumberOfDevices = rand.Intn(10)
 
 	setFields := []string{"name", "OPMode", "SollTemp"}
 
