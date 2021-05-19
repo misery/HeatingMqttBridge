@@ -41,27 +41,27 @@ import (
 	"time"
 )
 
-type Content struct {
+type content struct {
 	XMLName xml.Name       `xml:"content"`
-	Entries []ContentValue `xml:"field"`
+	Entries []contentValue `xml:"field"`
 }
 
-type ContentValue struct {
+type contentValue struct {
 	XMLName xml.Name `xml:"field"`
 	Name    string   `xml:"n"`
 	Value   string   `xml:"v"`
 }
 
-type WriteEvent struct {
+type writeEvent struct {
 	Prefix string
 	Name   string
 	Value  string
 }
 
-type Bridge struct {
+type bridgeCfg struct {
 	KeepRunning         chan bool
 	Client              MQTT.Client
-	WriteChannel        chan WriteEvent
+	WriteChannel        chan writeEvent
 	RefreshRoomChannel  chan string
 	HeatingUrl          string
 	Polling             int
@@ -69,7 +69,7 @@ type Bridge struct {
 	LastNumberOfDevices int
 }
 
-func SetupCloseHandler(bridge *Bridge) {
+func setupCloseHandler(bridge *bridgeCfg) {
 	c := make(chan os.Signal)
 	signal.Notify(c, os.Interrupt, syscall.SIGTERM)
 	go func() {
@@ -112,7 +112,7 @@ func fetch(ip string, values []string, prefix string) []byte {
 	return []byte("")
 }
 
-func propagate(bridge *Bridge, name string, value string, prefix string) bool {
+func propagate(bridge *bridgeCfg, name string, value string, prefix string) bool {
 	url := "http://" + bridge.HeatingUrl + "/cgi-bin/writeVal.cgi?" + prefix + "." + name + "=" + value
 
 	resp, err := http.Get(url)
@@ -126,7 +126,7 @@ func propagate(bridge *Bridge, name string, value string, prefix string) bool {
 	return false
 }
 
-func refreshSystemInformation(bridge *Bridge) int {
+func refreshSystemInformation(bridge *bridgeCfg) int {
 	fields := []string{
 		"isMaster", "totalNumberOfDevices", "numberOfSlaveControllers",
 
@@ -146,7 +146,7 @@ func refreshSystemInformation(bridge *Bridge) int {
 
 	body := fetch(bridge.HeatingUrl, fields, "")
 
-	var c Content
+	var c content
 	xml.Unmarshal(body, &c)
 
 	totalNumberOfDevices := 0
@@ -166,7 +166,7 @@ func refreshSystemInformation(bridge *Bridge) int {
 	return totalNumberOfDevices
 }
 
-func refreshRoomInformation(bridge *Bridge, number string) {
+func refreshRoomInformation(bridge *bridgeCfg, number string) {
 
 	fields := []string{"name", "kurzID", "ownerKurzID", "OPMode", "OPModeEna",
 		"RaumTemp", "SollTemp", "TempSIUnit", "WeekProg", "WeekProgEna",
@@ -174,7 +174,7 @@ func refreshRoomInformation(bridge *Bridge, number string) {
 
 	body := fetch(bridge.HeatingUrl, fields, number)
 
-	var c Content
+	var c content
 	xml.Unmarshal(body, &c)
 
 	for i := 0; i < len(c.Entries); i++ {
@@ -185,7 +185,7 @@ func refreshRoomInformation(bridge *Bridge, number string) {
 	}
 }
 
-func refresh(bridge *Bridge) {
+func refresh(bridge *bridgeCfg) {
 	totalNumberOfDevices := refreshSystemInformation(bridge)
 
 	setFields := []string{"name", "OPMode", "SollTemp"}
@@ -220,12 +220,12 @@ func refresh(bridge *Bridge) {
 	}
 }
 
-func listen(bridge *Bridge, topic string) {
+func listen(bridge *bridgeCfg, topic string) {
 	bridge.Client.Subscribe(topic, 0, func(client MQTT.Client, msg MQTT.Message) {
 		payload := string(msg.Payload())
 		splitted := strings.SplitN(msg.Topic(), "/", -1)
 		if len(splitted) > 3 {
-			event := WriteEvent{
+			event := writeEvent{
 				Prefix: splitted[len(splitted)-3],
 				Name:   splitted[len(splitted)-1],
 				Value:  payload,
@@ -235,7 +235,7 @@ func listen(bridge *Bridge, topic string) {
 	})
 }
 
-func running(bridge *Bridge) {
+func running(bridge *bridgeCfg) {
 	fmt.Println("Running...")
 	refresh(bridge)
 	ticker := time.NewTicker(time.Duration(bridge.Polling) * time.Second)
@@ -314,17 +314,17 @@ func main() {
 		os.Exit(2)
 	}
 
-	bridge := &Bridge{
+	bridge := &bridgeCfg{
 		Client:              MQTT.NewClient(createClientOptions(*broker, *user, *password, *cleansess)),
 		KeepRunning:         make(chan bool),
-		WriteChannel:        make(chan WriteEvent, 50),
+		WriteChannel:        make(chan writeEvent, 50),
 		RefreshRoomChannel:  make(chan string, 50),
 		HeatingUrl:          *heating,
 		Polling:             *polling,
 		Topic:               *topic,
 		LastNumberOfDevices: 0,
 	}
-	SetupCloseHandler(bridge)
+	setupCloseHandler(bridge)
 
 	if token := bridge.Client.Connect(); token.Wait() && token.Error() != nil {
 		log.Fatal(token.Error())
