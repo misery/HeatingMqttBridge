@@ -108,7 +108,7 @@ func fetch(ip string, values []string, prefix string) []byte {
 		}
 	}
 
-	log.Fatal(err)
+	log.Print(err)
 	return []byte("")
 }
 
@@ -327,7 +327,7 @@ func main() {
 	setupCloseHandler(bridge)
 
 	if token := bridge.Client.Connect(); token.Wait() && token.Error() != nil {
-		log.Fatal(token.Error())
+		log.Print(token.Error())
 		bridge.KeepRunning <- false
 	} else {
 		go running(bridge)
