@@ -29,7 +29,7 @@ import (
 	"flag"
 	"fmt"
 	MQTT "github.com/eclipse/paho.mqtt.golang"
-	"io"
+	"io/ioutil"
 	"log"
 	"math/rand"
 	"net/http"
@@ -102,7 +102,7 @@ func fetch(ip string, values []string, prefix string) []byte {
 	resp, err := http.Post(url, "text/xml", bytes.NewBuffer([]byte(xmlValue)))
 	if err == nil {
 		defer resp.Body.Close()
-		body, err := io.ReadAll(resp.Body)
+		body, err := ioutil.ReadAll(resp.Body)
 		if err == nil {
 			return body
 		}
@@ -118,7 +118,7 @@ func propagate(bridge *bridgeCfg, name string, value string, prefix string) bool
 	resp, err := http.Get(url)
 	if err == nil {
 		defer resp.Body.Close()
-		body, _ := io.ReadAll(resp.Body)
+		body, _ := ioutil.ReadAll(resp.Body)
 		bridge.RefreshRoomChannel <- prefix + "."
 		return string(body) == value
 	}
