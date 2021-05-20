@@ -63,7 +63,7 @@ type bridgeCfg struct {
 	Client              MQTT.Client
 	WriteChannel        chan writeEvent
 	RefreshRoomChannel  chan string
-	HeatingUrl          string
+	HeatingURL          string
 	Polling             int
 	Topic               string
 	LastNumberOfDevices int
@@ -78,7 +78,7 @@ func setupCloseHandler(bridge *bridgeCfg) {
 	}()
 }
 
-func generateXml(values []string, prefix string) string {
+func generateXML(values []string, prefix string) string {
 	xmlValue := "<content>"
 	for _, v := range values {
 		xmlValue += "<field>"
@@ -95,25 +95,35 @@ func generateXml(values []string, prefix string) string {
 	return xmlValue
 }
 
-func fetch(ip string, values []string, prefix string) []byte {
+func fetch(ip string, values []string, prefix string) content {
 	url := "http://" + ip + "/cgi-bin/ILRReadValues.cgi"
-	xmlValue := generateXml(values, prefix)
+	xmlValue := generateXML(values, prefix)
+	var c content
 
 	resp, err := http.Post(url, "text/xml", bytes.NewBuffer([]byte(xmlValue)))
-	if err == nil {
-		defer resp.Body.Close()
-		body, err := ioutil.ReadAll(resp.Body)
-		if err == nil {
-			return body
-		}
+	if err != nil {
+		log.Print(err)
+		return c
 	}
 
-	log.Print(err)
-	return []byte("")
+	defer resp.Body.Close()
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		log.Print(err)
+		return c
+	}
+
+	err = xml.Unmarshal(body, &c)
+	if err != nil {
+		log.Print(err)
+		return c
+	}
+
+	return c
 }
 
 func propagate(bridge *bridgeCfg, name string, value string, prefix string) bool {
-	url := "http://" + bridge.HeatingUrl + "/cgi-bin/writeVal.cgi?" + prefix + "." + name + "=" + value
+	url := "http://" + bridge.HeatingURL + "/cgi-bin/writeVal.cgi?" + prefix + "." + name + "=" + value
 
 	resp, err := http.Get(url)
 	if err == nil {
@@ -144,10 +154,7 @@ func refreshSystemInformation(bridge *bridgeCfg) int {
 		"VPI.href", "VPI.state",
 		"CD.uname", "CD.upass", "CD.ureg"}
 
-	body := fetch(bridge.HeatingUrl, fields, "")
-
-	var c content
-	xml.Unmarshal(body, &c)
+	c := fetch(bridge.HeatingURL, fields, "")
 
 	totalNumberOfDevices := 0
 	for i := 0; i < len(c.Entries); i++ {
@@ -172,10 +179,7 @@ func refreshRoomInformation(bridge *bridgeCfg, number string) {
 		"RaumTemp", "SollTemp", "TempSIUnit", "WeekProg", "WeekProgEna",
 		"SollTempStepVal", "SollTempMinVal", "SollTempMaxVal"}
 
-	body := fetch(bridge.HeatingUrl, fields, number)
-
-	var c content
-	xml.Unmarshal(body, &c)
+	c := fetch(bridge.HeatingURL, fields, number)
 
 	for i := 0; i < len(c.Entries); i++ {
 		splitted := strings.SplitN(c.Entries[i].Name, ".", 2)
@@ -319,7 +323,7 @@ func main() {
 		KeepRunning:         make(chan bool),
 		WriteChannel:        make(chan writeEvent, 50),
 		RefreshRoomChannel:  make(chan string, 50),
-		HeatingUrl:          *heating,
+		HeatingURL:          *heating,
 		Polling:             *polling,
 		Topic:               *topic,
 		LastNumberOfDevices: 0,
