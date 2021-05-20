@@ -45,5 +45,5 @@ checksum:
   name_template: "{{ .ProjectName }}_v{{ .Version }}_checksums.txt"
 
 release:
-  disable: true
-
+  draft: true
+  prerelease: auto
