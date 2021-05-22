@@ -23,12 +23,25 @@ All parameters can be passed via cmdline arguments or via environment variables.
 
 
 ## Information
-The EnergyLogic provide some system information and information about any wireless sensor. Those wireless sensors are prefixed by a consecutive number of the central station like ``G0``, ``G1`` and so on. The number of wireless sensors are indidcated by ``totalNumberOfDevices``.
+The EnergyLogic provide some system information and information about any wireless sensor. Those wireless sensors are prefixed by a consecutive number of the central station like ``G0``, ``G1`` and so on. The number of wireless sensors are indicated by ``totalNumberOfDevices``.
 
 ### Example
 ```
   isMaster: 1
   totalNumberOfDevices: 3
+
+  ...
+
+  hw/HostName: ROTH-0111A1
+  hw/IP: 192.168.1.2
+
+  ...
+
+  R0/numberOfPairedDevices: 1
+
+  ...
+
+  R1/numberOfPairedDevices: 2
 
   ...
 
