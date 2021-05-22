@@ -331,7 +331,7 @@ func setStringParam(param *string, envName string, useEnv bool, defaultValue str
 			*param = os.Getenv(envName)
 		}
 
-		if useEnv && *param == "" {
+		if *param == "" {
 			*param = defaultValue
 		}
 	}
