@@ -309,36 +309,69 @@ func createClientOptions(broker string, user string, password string, cleansess 
 	return opts
 }
 
-func main() {
+func setStringParam(param *string, envName string, useEnv bool, defaultValue string, required bool) {
+	if *param == "" {
+		if useEnv {
+			*param = os.Getenv(envName)
+		}
+
+		if useEnv && *param == "" {
+			*param = defaultValue
+		}
+	}
+
+	if required && *param == "" {
+		log.Println(envName, "is undefined")
+		os.Exit(1)
+	}
+}
+
+func isFlagPassed(name string) bool {
+	found := false
+	flag.Visit(func(f *flag.Flag) {
+		if f.Name == name {
+			found = true
+		}
+	})
+	return found
+}
+
+func createBridge() *bridgeCfg {
+	env := flag.Bool("env", false, "Allow environment variables if provided")
 	heating := flag.String("heating", "", "The IP/hostname of the Roth EnergyLogic")
 	topic := flag.String("topic", "", "The topic name to/from which to publish/subscribe")
 	broker := flag.String("broker", "", "The broker URI. ex: tcp://10.10.1.1:1883")
 	password := flag.String("password", "", "The password (optional)")
 	user := flag.String("user", "", "The User (optional)")
-	cleansess := flag.Bool("clean", false, "Set Clean Session (default false)")
-	polling := flag.Int("polling", 90, "Refresh interval in seconds (default 90 seconds)")
+	clean := flag.Bool("clean", false, "Set clean Session")
+	polling := flag.Int("polling", 90, "Refresh interval in seconds")
 	flag.Parse()
 
-	if *topic == "" {
-		*topic = "roth"
-	}
+	setStringParam(heating, "HEATING", *env, "", true)
+	setStringParam(topic, "TOPIC", *env, "roth", true)
+	setStringParam(broker, "BROKER", *env, "", true)
+	setStringParam(password, "BROKER_USER", *env, "", false)
+	setStringParam(user, "BROKER_PSW", *env, "", false)
 
+	if !isFlagPassed("polling") && *env {
+		v, err := strconv.Atoi(os.Getenv("POLLING"))
+		if err == nil {
+			*polling = v
+		}
+	}
 	if *polling < 0 {
 		*polling = 90
 	}
 
-	if *broker == "" {
-		log.Println("Broker is undefined")
-		os.Exit(1)
+	if !isFlagPassed("clean") && *env {
+		v, err := strconv.ParseBool(os.Getenv("CLEAN"))
+		if err == nil {
+			*clean = v
+		}
 	}
 
-	if *heating == "" {
-		log.Println("Heating is undefined")
-		os.Exit(2)
-	}
-
-	bridge := &bridgeCfg{
-		Client:              MQTT.NewClient(createClientOptions(*broker, *user, *password, *cleansess)),
+	return &bridgeCfg{
+		Client:              MQTT.NewClient(createClientOptions(*broker, *user, *password, *clean)),
 		KeepRunning:         make(chan bool),
 		WriteChannel:        make(chan writeEvent, 50),
 		RefreshRoomChannel:  make(chan string, 50),
@@ -347,6 +380,10 @@ func main() {
 		Topic:               *topic,
 		LastNumberOfDevices: 0,
 	}
+}
+
+func main() {
+	bridge := createBridge()
 	setupCloseHandler(bridge)
 
 	if token := bridge.Client.Connect(); token.Wait() && token.Error() != nil {
