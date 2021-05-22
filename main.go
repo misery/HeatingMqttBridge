@@ -25,6 +25,7 @@ package main
 
 import (
 	"bytes"
+	"crypto/tls"
 	"encoding/xml"
 	"flag"
 	"fmt"
@@ -32,6 +33,7 @@ import (
 	"log"
 	"math/rand"
 	"net/http"
+	"net/url"
 	"os"
 	"os/signal"
 	"strconv"
@@ -241,7 +243,7 @@ func listen(bridge *bridgeCfg, topic string) {
 }
 
 func running(bridge *bridgeCfg) {
-	fmt.Println("Running...")
+	log.Println("Running...")
 	refresh(bridge)
 	ticker := time.NewTicker(time.Duration(bridge.Polling) * time.Second)
 
@@ -279,6 +281,19 @@ func running(bridge *bridgeCfg) {
 	}()
 }
 
+func attemptHandler(broker *url.URL, tlsCfg *tls.Config) *tls.Config {
+	log.Println("Connecting...", broker)
+	return tlsCfg
+}
+
+func connectHandler(client MQTT.Client) {
+	log.Println("Connected")
+}
+
+func connectLostHandler(client MQTT.Client, err error) {
+	log.Println("Connection lost", err)
+}
+
 func createClientOptions(broker string, user string, password string, cleansess bool) *MQTT.ClientOptions {
 	rand.Seed(time.Now().UTC().UnixNano())
 	id := fmt.Sprint("HeatingMqttBridge-", rand.Intn(1000))
@@ -288,6 +303,9 @@ func createClientOptions(broker string, user string, password string, cleansess 
 	opts.SetUsername(user)
 	opts.SetPassword(password)
 	opts.SetCleanSession(cleansess)
+	opts.SetConnectionAttemptHandler(attemptHandler)
+	opts.SetOnConnectHandler(connectHandler)
+	opts.SetConnectionLostHandler(connectLostHandler)
 	return opts
 }
 
@@ -310,12 +328,12 @@ func main() {
 	}
 
 	if *broker == "" {
-		fmt.Println("Broker is undefined")
+		log.Println("Broker is undefined")
 		os.Exit(1)
 	}
 
 	if *heating == "" {
-		fmt.Println("Heating is undefined")
+		log.Println("Heating is undefined")
 		os.Exit(2)
 	}
 
