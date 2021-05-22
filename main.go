@@ -69,6 +69,7 @@ type bridgeCfg struct {
 	HeatingURL          string
 	Polling             int
 	Topic               string
+	FullInformation     bool
 	LastNumberOfDevices int
 }
 
@@ -142,20 +143,28 @@ func propagate(bridge *bridgeCfg, name string, value string, prefix string) bool
 func refreshSystemInformation(bridge *bridgeCfg) int {
 	fields := []string{
 		"isMaster", "totalNumberOfDevices", "numberOfSlaveControllers",
-
 		"hw.HostName", "hw.IP", "hw.NM", "hw.GW", "hw.Addr", "hw.DNS1", "hw.DNS2",
 
-		"R0.SystemStatus", "R0.DateTime", "R0.Safety", "R0.Taupunkt", "R0.OutTemp", "R0.ErrorCode",
-		"R0.WeekProgWarn", "R0.OPModeRegler", "R0.HeatCool", "R0.Alarm1",
+		"R0.SystemStatus", "R0.DateTime",
+		"R0.kurzID", "R0.numberOfPairedDevices",
+		"R1.kurzID", "R1.numberOfPairedDevices",
+		"R2.kurzID", "R2.numberOfPairedDevices",
+	}
 
-		"R0.kurzID", "R0.numberOfPairedDevices", "R0.uniqueID",
-		"R1.kurzID", "R1.numberOfPairedDevices", "R1.uniqueID",
-		"R2.kurzID", "R2.numberOfPairedDevices", "R2.uniqueID",
+	if bridge.FullInformation {
+		fieldsFull := []string{
+			"R0.Safety", "R0.Taupunkt", "R0.OutTemp", "R0.ErrorCode",
+			"R0.WeekProgWarn", "R0.OPModeRegler", "R0.HeatCool", "R0.Alarm1",
 
-		"STM-APP", "STM-BL",
-		"STELL-APP", "STELL-BL",
-		"VPI.href", "VPI.state",
-		"CD.uname", "CD.upass", "CD.ureg"}
+			"R0.uniqueID", "R1.uniqueID", "R2.uniqueID",
+
+			"STM-APP", "STM-BL",
+			"STELL-APP", "STELL-BL",
+			"VPI.href", "VPI.state",
+			"CD.uname", "CD.upass", "CD.ureg"}
+
+		fields = append(fields, fieldsFull...)
+	}
 
 	c := fetch(bridge.HeatingURL, fields, "")
 
@@ -326,6 +335,15 @@ func setStringParam(param *string, envName string, useEnv bool, defaultValue str
 	}
 }
 
+func setBoolParam(value *bool, name string) {
+	if !isFlagPassed(name) {
+		v, err := strconv.ParseBool(os.Getenv(strings.ToUpper(name)))
+		if err == nil {
+			*value = v
+		}
+	}
+}
+
 func isFlagPassed(name string) bool {
 	found := false
 	flag.Visit(func(f *flag.Flag) {
@@ -345,6 +363,7 @@ func createBridge() *bridgeCfg {
 	user := flag.String("user", "", "The User (optional)")
 	clean := flag.Bool("clean", false, "Set clean Session")
 	polling := flag.Int("polling", 90, "Refresh interval in seconds")
+	full := flag.Bool("full", false, "Provide full information to broker")
 	flag.Parse()
 
 	setStringParam(heating, "HEATING", *env, "", true)
@@ -353,21 +372,20 @@ func createBridge() *bridgeCfg {
 	setStringParam(password, "BROKER_USER", *env, "", false)
 	setStringParam(user, "BROKER_PSW", *env, "", false)
 
-	if !isFlagPassed("polling") && *env {
-		v, err := strconv.Atoi(os.Getenv("POLLING"))
-		if err == nil {
-			*polling = v
+	if *env {
+		setBoolParam(clean, "clean")
+		setBoolParam(full, "full")
+
+		if !isFlagPassed("polling") {
+			v, err := strconv.Atoi(os.Getenv("POLLING"))
+			if err == nil {
+				*polling = v
+			}
 		}
-	}
-	if *polling < 0 {
-		*polling = 90
 	}
 
-	if !isFlagPassed("clean") && *env {
-		v, err := strconv.ParseBool(os.Getenv("CLEAN"))
-		if err == nil {
-			*clean = v
-		}
+	if *polling < 0 {
+		*polling = 90
 	}
 
 	return &bridgeCfg{
@@ -378,6 +396,7 @@ func createBridge() *bridgeCfg {
 		HeatingURL:          *heating,
 		Polling:             *polling,
 		Topic:               *topic,
+		FullInformation:     *full,
 		LastNumberOfDevices: 0,
 	}
 }
