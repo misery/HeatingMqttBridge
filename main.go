@@ -28,7 +28,6 @@ import (
 	"encoding/xml"
 	"flag"
 	"fmt"
-	MQTT "github.com/eclipse/paho.mqtt.golang"
 	"io/ioutil"
 	"log"
 	"math/rand"
@@ -39,6 +38,8 @@ import (
 	"strings"
 	"syscall"
 	"time"
+
+	MQTT "github.com/eclipse/paho.mqtt.golang"
 )
 
 type content struct {
