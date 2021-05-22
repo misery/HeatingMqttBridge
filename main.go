@@ -177,7 +177,12 @@ func refreshSystemInformation(bridge *bridgeCfg) int {
 			}
 		}
 
-		t := fmt.Sprint(bridge.Topic, "/", c.Entries[i].Name)
+		if c.Entries[i].Value == "" {
+			continue
+		}
+
+		name := strings.ReplaceAll(c.Entries[i].Name, ".", "/")
+		t := fmt.Sprint(bridge.Topic, "/", name)
 		token := bridge.Client.Publish(t, 0, false, c.Entries[i].Value)
 		token.Wait()
 	}
@@ -194,8 +199,8 @@ func refreshRoomInformation(bridge *bridgeCfg, number string) {
 	c := fetch(bridge.HeatingURL, fields, number)
 
 	for i := 0; i < len(c.Entries); i++ {
-		splitted := strings.SplitN(c.Entries[i].Name, ".", 2)
-		t := fmt.Sprint(bridge.Topic, "/devices/", splitted[0], "/", splitted[1])
+		name := strings.ReplaceAll(c.Entries[i].Name, ".", "/")
+		t := fmt.Sprint(bridge.Topic, "/devices/", name)
 		token := bridge.Client.Publish(t, 0, false, c.Entries[i].Value)
 		token.Wait()
 	}
