@@ -332,10 +332,8 @@ func main() {
 
 	if token := bridge.Client.Connect(); token.Wait() && token.Error() != nil {
 		log.Print(token.Error())
-		bridge.KeepRunning <- false
 	} else {
 		go running(bridge)
+		<-bridge.KeepRunning
 	}
-
-	<-bridge.KeepRunning
 }
