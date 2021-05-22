@@ -9,6 +9,6 @@ FROM alpine
 COPY --from=builder /src/HeatingMqttBridge /bin/HeatingMqttBridge
 
 USER nobody
-ENV BROKER= HEATING= POLLING=
+ENV BROKER= HEATING=
 
 CMD ["/bin/HeatingMqttBridge", "-env"]
