@@ -170,6 +170,10 @@ func refreshSystemInformation(bridge *bridgeCfg) int {
 
 	totalNumberOfDevices := 0
 	for i := 0; i < len(c.Entries); i++ {
+		if c.Entries[i].Value == "" {
+			continue
+		}
+
 		if c.Entries[i].Name == "totalNumberOfDevices" {
 			v, err := strconv.Atoi(c.Entries[i].Value)
 			if err == nil {
@@ -177,11 +181,7 @@ func refreshSystemInformation(bridge *bridgeCfg) int {
 			}
 		}
 
-		if c.Entries[i].Value == "" {
-			continue
-		}
-
-		name := strings.ReplaceAll(c.Entries[i].Name, ".", "/")
+		name := strings.Replace(c.Entries[i].Name, ".", "/", -1)
 		t := fmt.Sprint(bridge.Topic, "/", name)
 		token := bridge.Client.Publish(t, 0, false, c.Entries[i].Value)
 		token.Wait()
@@ -199,7 +199,7 @@ func refreshRoomInformation(bridge *bridgeCfg, number string) {
 	c := fetch(bridge.HeatingURL, fields, number)
 
 	for i := 0; i < len(c.Entries); i++ {
-		name := strings.ReplaceAll(c.Entries[i].Name, ".", "/")
+		name := strings.Replace(c.Entries[i].Name, ".", "/", -1)
 		t := fmt.Sprint(bridge.Topic, "/devices/", name)
 		token := bridge.Client.Publish(t, 0, false, c.Entries[i].Value)
 		token.Wait()
