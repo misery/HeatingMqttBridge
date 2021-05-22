@@ -44,6 +44,13 @@ import (
 	MQTT "github.com/eclipse/paho.mqtt.golang"
 )
 
+var systemFields []string
+var systemFieldsAdditional []string
+
+var roomFields []string
+var roomFieldsTemperature []string
+var roomSetFields []string
+
 type content struct {
 	XMLName xml.Name       `xml:"content"`
 	Entries []contentValue `xml:"field"`
@@ -80,6 +87,15 @@ func setupCloseHandler(bridge *bridgeCfg) {
 		<-c
 		bridge.KeepRunning <- false
 	}()
+}
+
+func stringSuffixInSlice(value string, list []string) bool {
+	for _, entry := range list {
+		if strings.HasSuffix(value, entry) {
+			return true
+		}
+	}
+	return false
 }
 
 func generateXML(values []string, prefix string) string {
@@ -127,6 +143,10 @@ func fetch(ip string, values []string, prefix string) content {
 }
 
 func propagate(bridge *bridgeCfg, name string, value string, prefix string) bool {
+	if stringSuffixInSlice(name, roomFieldsTemperature) {
+		value = strings.Replace(value, ".", "", -1)
+	}
+
 	url := "http://" + bridge.HeatingURL + "/cgi-bin/writeVal.cgi?" + prefix + "." + name + "=" + value
 
 	resp, err := http.Get(url)
@@ -141,29 +161,9 @@ func propagate(bridge *bridgeCfg, name string, value string, prefix string) bool
 }
 
 func refreshSystemInformation(bridge *bridgeCfg) int {
-	fields := []string{
-		"isMaster", "totalNumberOfDevices", "numberOfSlaveControllers",
-		"hw.HostName", "hw.IP", "hw.NM", "hw.GW", "hw.Addr", "hw.DNS1", "hw.DNS2",
-
-		"R0.SystemStatus", "R0.DateTime",
-		"R0.kurzID", "R0.numberOfPairedDevices",
-		"R1.kurzID", "R1.numberOfPairedDevices",
-		"R2.kurzID", "R2.numberOfPairedDevices",
-	}
-
+	fields := systemFields
 	if bridge.FullInformation {
-		fieldsFull := []string{
-			"R0.Safety", "R0.Taupunkt", "R0.OutTemp", "R0.ErrorCode",
-			"R0.WeekProgWarn", "R0.OPModeRegler", "R0.HeatCool", "R0.Alarm1",
-
-			"R0.uniqueID", "R1.uniqueID", "R2.uniqueID",
-
-			"STM-APP", "STM-BL",
-			"STELL-APP", "STELL-BL",
-			"VPI.href", "VPI.state",
-			"CD.uname", "CD.upass", "CD.ureg"}
-
-		fields = append(fields, fieldsFull...)
+		fields = append(fields, systemFieldsAdditional...)
 	}
 
 	c := fetch(bridge.HeatingURL, fields, "")
@@ -190,18 +190,22 @@ func refreshSystemInformation(bridge *bridgeCfg) int {
 	return totalNumberOfDevices
 }
 
+func fetchTemperature(name string, value string) string {
+	if stringSuffixInSlice(name, roomFieldsTemperature) && len(value) > 2 {
+		value = value[:2] + "." + value[2:]
+	}
+
+	return value
+}
+
 func refreshRoomInformation(bridge *bridgeCfg, number string) {
-
-	fields := []string{"name", "kurzID", "ownerKurzID", "OPMode", "OPModeEna",
-		"RaumTemp", "SollTemp", "TempSIUnit", "WeekProg", "WeekProgEna",
-		"SollTempStepVal", "SollTempMinVal", "SollTempMaxVal"}
-
-	c := fetch(bridge.HeatingURL, fields, number)
+	c := fetch(bridge.HeatingURL, roomFields, number)
 
 	for i := 0; i < len(c.Entries); i++ {
 		name := strings.Replace(c.Entries[i].Name, ".", "/", -1)
 		t := fmt.Sprint(bridge.Topic, "/devices/", name)
-		token := bridge.Client.Publish(t, 0, false, c.Entries[i].Value)
+		value := fetchTemperature(name, c.Entries[i].Value)
+		token := bridge.Client.Publish(t, 0, false, value)
 		token.Wait()
 	}
 }
@@ -209,13 +213,11 @@ func refreshRoomInformation(bridge *bridgeCfg, number string) {
 func refresh(bridge *bridgeCfg) {
 	totalNumberOfDevices := refreshSystemInformation(bridge)
 
-	setFields := []string{"name", "OPMode", "SollTemp"}
-
 	if totalNumberOfDevices > bridge.LastNumberOfDevices {
 		firstNewDevice := totalNumberOfDevices - (totalNumberOfDevices - bridge.LastNumberOfDevices)
 		for i := firstNewDevice; i < totalNumberOfDevices; i++ {
 			prefix := fmt.Sprint("G", i)
-			for _, name := range setFields {
+			for _, name := range roomSetFields {
 				topic := fmt.Sprint(bridge.Topic, "/devices/", prefix, "/set/", name)
 				listen(bridge, topic)
 			}
@@ -226,7 +228,7 @@ func refresh(bridge *bridgeCfg) {
 	} else if totalNumberOfDevices < bridge.LastNumberOfDevices {
 		for i := totalNumberOfDevices; i < bridge.LastNumberOfDevices; i++ {
 			prefix := fmt.Sprint("G", i)
-			for _, name := range setFields {
+			for _, name := range roomSetFields {
 				topic := fmt.Sprint(bridge.Topic, "/devices/", prefix, "/set/", name)
 				bridge.Client.Unsubscribe(topic)
 			}
@@ -406,6 +408,44 @@ func createBridge() *bridgeCfg {
 	}
 }
 
+func setFields() {
+	// System information
+	systemFields = []string{
+		"isMaster", "totalNumberOfDevices", "numberOfSlaveControllers",
+		"hw.HostName", "hw.IP", "hw.NM", "hw.GW", "hw.Addr", "hw.DNS1", "hw.DNS2",
+
+		"R0.SystemStatus", "R0.DateTime",
+		"R0.kurzID", "R0.numberOfPairedDevices",
+		"R1.kurzID", "R1.numberOfPairedDevices",
+		"R2.kurzID", "R2.numberOfPairedDevices",
+	}
+
+	systemFieldsAdditional = []string{
+		"R0.Safety", "R0.Taupunkt", "R0.OutTemp", "R0.ErrorCode",
+		"R0.WeekProgWarn", "R0.OPModeRegler", "R0.HeatCool", "R0.Alarm1",
+
+		"R0.uniqueID", "R1.uniqueID", "R2.uniqueID",
+
+		"STM-APP", "STM-BL",
+		"STELL-APP", "STELL-BL",
+		"VPI.href", "VPI.state",
+		"CD.uname", "CD.upass", "CD.ureg",
+	}
+
+	// Room information
+	roomFieldsTemperature = []string{"RaumTemp", "SollTemp",
+		"SollTempStepVal", "SollTempMinVal", "SollTempMaxVal",
+	}
+
+	roomFields = []string{"name", "kurzID", "ownerKurzID", "OPMode", "OPModeEna",
+		"TempSIUnit", "WeekProg", "WeekProgEna",
+	}
+
+	roomFields = append(roomFields, roomFieldsTemperature...)
+
+	roomSetFields = []string{"name", "OPMode", "SollTemp"}
+}
+
 func main() {
 	bridge := createBridge()
 	setupCloseHandler(bridge)
@@ -413,6 +453,7 @@ func main() {
 	if token := bridge.Client.Connect(); token.Wait() && token.Error() != nil {
 		log.Print(token.Error())
 	} else {
+		setFields()
 		go running(bridge)
 		<-bridge.KeepRunning
 	}

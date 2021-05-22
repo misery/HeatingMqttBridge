@@ -46,12 +46,12 @@ The EnergyLogic provide some system information and information about any wirele
   ...
 
   devices/G0/name: LivingRoom
-  devices/G0/RaumTemp: 2255
-  devices/G0/SollTemp: 2300
+  devices/G0/RaumTemp: 22.55
+  devices/G0/SollTemp: 23.00
   
   ...
   
   devices/G1/name: Kitchen
-  devices/G1/RaumTemp: 2135
-  devices/G1/SollTemp: 2100
+  devices/G1/RaumTemp: 21.35
+  devices/G1/SollTemp: 21.00
 ```
