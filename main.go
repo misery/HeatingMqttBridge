@@ -146,9 +146,8 @@ func propagate(bridge *bridgeCfg, name string, value string, prefix string) bool
 	if stringSuffixInSlice(name, roomFieldsTemperature) {
 		value = strings.Replace(value, ".", "", -1)
 	}
-	value = strings.Replace(value, " ", "+", -1)
 
-	url := "http://" + bridge.HeatingURL + "/cgi-bin/writeVal.cgi?" + prefix + "." + name + "=" + value
+	url := "http://" + bridge.HeatingURL + "/cgi-bin/writeVal.cgi?" + prefix + "." + name + "=" + url.QueryEscape(value)
 
 	resp, err := http.Get(url)
 	if err == nil {
