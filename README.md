@@ -45,24 +45,24 @@ The EnergyLogic provide some system information and information about any wirele
 
   ...
 
-  devices/G0/name: LivingRoom
-  devices/G0/RaumTemp: 22.55
-  devices/G0/SollTemp: 23.00
+  G0/name: LivingRoom
+  G0/RaumTemp: 22.55
+  G0/SollTemp: 23.00
   
   ...
   
-  devices/G1/name: Kitchen
-  devices/G1/RaumTemp: 21.35
-  devices/G1/SollTemp: 21.00
+  G1/name: Kitchen
+  G1/RaumTemp: 21.35
+  G1/SollTemp: 21.00
 ```
 
 ### Set values
 The following room values are settable and will be propagated to the EnergyLogic.
 Be aware that ``Gx`` needs a valid room number like ``G0``, ``G1`` and so on.
 
-- ``name`` settable via ``devices/Gx/set/name``. This changes the room name.
-- ``SollTemp`` settable via ``devices/Gx/set/SollTemp``. This changes the target temperature.
-- ``OPMode`` settable via ``devices/Gx/set/OPMode``. This changes heating mode for this device.
+- ``name`` settable via ``Gx/set/name``. This changes the room name.
+- ``SollTemp`` settable via ``Gx/set/SollTemp``. This changes the target temperature.
+- ``OPMode`` settable via ``Gx/set/OPMode``. This changes heating mode for this device.
   - ``0`` Day (normally **On**)
   - ``1`` Night
   - ``2`` Holiday (normally **Off**)
