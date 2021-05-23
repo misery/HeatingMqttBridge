@@ -146,6 +146,9 @@ func fetch(ip string, values []string, prefix string) content {
 func propagate(bridge *bridgeCfg, name string, value string, prefix string) bool {
 	if stringSuffixInSlice(name, roomFieldsTemperature) {
 		value = strings.Replace(value, ".", "", -1)
+		for i := len(value); i < 4; i++ {
+			value += "0"
+		}
 	}
 
 	data := prefix + "." + name + "=" + url.QueryEscape(value)
