@@ -217,7 +217,7 @@ func refreshRoomInformation(bridge *bridgeCfg, number string) {
 
 	for i := 0; i < len(c.Entries); i++ {
 		name := strings.Replace(c.Entries[i].Name, ".", "/", -1)
-		t := fmt.Sprint(bridge.Topic, name)
+		t := fmt.Sprint(bridge.Topic, "/", name)
 		value := fetchTemperature(name, c.Entries[i].Value)
 		publish(bridge, t, value)
 	}
@@ -232,7 +232,7 @@ func refresh(bridge *bridgeCfg) {
 			prefix := fmt.Sprint("G", i)
 			log.Println("Add room:", prefix)
 			for _, name := range roomSetFields {
-				topic := fmt.Sprint(bridge.Topic, prefix, "/set/", name)
+				topic := fmt.Sprint(bridge.Topic, "/", prefix, "/set/", name)
 				listen(bridge, topic)
 			}
 		}
@@ -244,7 +244,7 @@ func refresh(bridge *bridgeCfg) {
 			prefix := fmt.Sprint("G", i)
 			log.Println("Remove room:", prefix)
 			for _, name := range roomSetFields {
-				topic := fmt.Sprint(bridge.Topic, prefix, "/set/", name)
+				topic := fmt.Sprint(bridge.Topic, "/", prefix, "/set/", name)
 				bridge.Client.Unsubscribe(topic)
 			}
 		}
