@@ -2,7 +2,7 @@ FROM golang:alpine AS builder
 
 WORKDIR /src
 COPY . .
-RUN go build -ldflags="-s -w"
+RUN CGO_ENABLED=0 go build -ldflags="-s -w"
 
 
 FROM alpine
