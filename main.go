@@ -122,20 +122,21 @@ func fetch(ip string, values []string, prefix string) content {
 
 	resp, err := http.Post(url, "text/xml", bytes.NewBuffer([]byte(xmlValue)))
 	if err != nil {
-		log.Print(err)
+		log.Println(err)
 		return c
 	}
 
 	defer resp.Body.Close()
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		log.Print(err)
+		log.Println(err)
 		return c
 	}
 
 	err = xml.Unmarshal(body, &c)
 	if err != nil {
-		log.Print(err)
+		log.Println(err)
+		log.Println(string(body))
 		return c
 	}
 
@@ -147,8 +148,10 @@ func propagate(bridge *bridgeCfg, name string, value string, prefix string) bool
 		value = strings.Replace(value, ".", "", -1)
 	}
 
-	url := "http://" + bridge.HeatingURL + "/cgi-bin/writeVal.cgi?" + prefix + "." + name + "=" + url.QueryEscape(value)
+	data := prefix + "." + name + "=" + url.QueryEscape(value)
+	url := "http://" + bridge.HeatingURL + "/cgi-bin/writeVal.cgi?" + data
 
+	log.Println("Propagate:", data)
 	resp, err := http.Get(url)
 	if err == nil {
 		defer resp.Body.Close()
@@ -157,7 +160,16 @@ func propagate(bridge *bridgeCfg, name string, value string, prefix string) bool
 		return string(body) == value
 	}
 
+	log.Println(err)
 	return false
+}
+
+func publish(bridge *bridgeCfg, topic string, value string) {
+	token := bridge.Client.Publish(topic, 0, false, value)
+	token.Wait()
+	if token.Error() != nil {
+		log.Println(token.Error())
+	}
 }
 
 func refreshSystemInformation(bridge *bridgeCfg) int {
@@ -183,8 +195,7 @@ func refreshSystemInformation(bridge *bridgeCfg) int {
 
 		name := strings.Replace(c.Entries[i].Name, ".", "/", -1)
 		t := fmt.Sprint(bridge.Topic, "/", name)
-		token := bridge.Client.Publish(t, 0, false, c.Entries[i].Value)
-		token.Wait()
+		publish(bridge, t, c.Entries[i].Value)
 	}
 
 	return totalNumberOfDevices
@@ -205,8 +216,7 @@ func refreshRoomInformation(bridge *bridgeCfg, number string) {
 		name := strings.Replace(c.Entries[i].Name, ".", "/", -1)
 		t := fmt.Sprint(bridge.Topic, "/devices/", name)
 		value := fetchTemperature(name, c.Entries[i].Value)
-		token := bridge.Client.Publish(t, 0, false, value)
-		token.Wait()
+		publish(bridge, t, value)
 	}
 }
 
@@ -217,6 +227,7 @@ func refresh(bridge *bridgeCfg) {
 		firstNewDevice := totalNumberOfDevices - (totalNumberOfDevices - bridge.LastNumberOfDevices)
 		for i := firstNewDevice; i < totalNumberOfDevices; i++ {
 			prefix := fmt.Sprint("G", i)
+			log.Println("Add room:", prefix)
 			for _, name := range roomSetFields {
 				topic := fmt.Sprint(bridge.Topic, "/devices/", prefix, "/set/", name)
 				listen(bridge, topic)
@@ -228,6 +239,7 @@ func refresh(bridge *bridgeCfg) {
 	} else if totalNumberOfDevices < bridge.LastNumberOfDevices {
 		for i := totalNumberOfDevices; i < bridge.LastNumberOfDevices; i++ {
 			prefix := fmt.Sprint("G", i)
+			log.Println("Remove room:", prefix)
 			for _, name := range roomSetFields {
 				topic := fmt.Sprint(bridge.Topic, "/devices/", prefix, "/set/", name)
 				bridge.Client.Unsubscribe(topic)
@@ -451,7 +463,7 @@ func main() {
 	setupCloseHandler(bridge)
 
 	if token := bridge.Client.Connect(); token.Wait() && token.Error() != nil {
-		log.Print(token.Error())
+		log.Println(token.Error())
 	} else {
 		setFields()
 		go running(bridge)
