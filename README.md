@@ -67,3 +67,8 @@ Be aware that ``Gx`` needs a valid room number like ``G0``, ``G1`` and so on.
   - ``1`` Night
   - ``2`` Holiday (normally **Off**)
 
+### Docker
+You can run this bridge in a container with Docker.
+
+``docker run --rm --name heating -e HEATING=192.168.1.3 -e BROKER=192.168.1.2:1883 aklitzing/heatingmqttbridge``
+
