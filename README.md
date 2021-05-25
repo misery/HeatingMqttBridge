@@ -12,7 +12,7 @@ pushes all information to an Mqtt broker.
 All parameters can be passed via cmdline arguments or via environment variables. If both are passed the cmdline argument has precedence.
 
 - ``-env`` Allow environment variables if provided, otherwise they will be ignored. (optional)
-- ``-heating`` / ``HEATING`` IP or hostname of your Energy Logic. (**required**)
+- ``-heating`` / ``HEATING`` IP or hostname of your EnergyLogic. (**required**)
 - ``-broker`` / ``BROKER`` IP or hostname with port of your MQTT broker. (*example: 192.168.1.2:1883*) (**required**)
 - ``-user`` / ``BROKER_USER`` Username of your MQTT broker. (optional)
 - ``-password`` / ``BROKER_PSW`` Password of your MQTT broker. (optional)
