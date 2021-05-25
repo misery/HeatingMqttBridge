@@ -31,7 +31,6 @@ import (
 	"fmt"
 	"io/ioutil"
 	"log"
-	"math/rand"
 	"net/http"
 	"net/url"
 	"os"
@@ -327,11 +326,9 @@ func connectLostHandler(client MQTT.Client, err error) {
 }
 
 func createClientOptions(broker string, user string, password string, cleansess bool) *MQTT.ClientOptions {
-	rand.Seed(time.Now().UTC().UnixNano())
-	id := fmt.Sprint("HeatingMqttBridge-", rand.Intn(1000))
 	opts := MQTT.NewClientOptions()
 	opts.AddBroker(broker)
-	opts.SetClientID(id)
+	opts.SetClientID("HeatingMqttBridge")
 	opts.SetUsername(user)
 	opts.SetPassword(password)
 	opts.SetCleanSession(cleansess)
