@@ -206,7 +206,8 @@ func refreshSystemInformation(bridge *bridgeCfg) int {
 
 func fetchTemperature(name string, value string) string {
 	if stringSuffixInSlice(name, roomFieldsTemperature) && len(value) > 2 {
-		value = value[:2] + "." + value[2:]
+		decimalPoint := len(value) - 2
+		value = value[:decimalPoint] + "." + value[decimalPoint:]
 	}
 
 	return value
