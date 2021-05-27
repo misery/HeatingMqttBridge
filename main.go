@@ -77,6 +77,11 @@ type bridgeCfg struct {
 	Topic               string
 	FullInformation     bool
 	LastNumberOfDevices int
+	SystemInformation   map[string]string
+}
+
+func identifier(bridge *bridgeCfg) string {
+	return bridge.SystemInformation["hw.HostName"]
 }
 
 func setupCloseHandler(bridge *bridgeCfg) {
@@ -183,6 +188,7 @@ func refreshSystemInformation(bridge *bridgeCfg) int {
 	c := fetch(bridge.HeatingURL, fields, "")
 
 	totalNumberOfDevices := 0
+	bridge.SystemInformation = map[string]string{}
 	for i := 0; i < len(c.Entries); i++ {
 		if c.Entries[i].Value == "" {
 			continue
@@ -194,6 +200,8 @@ func refreshSystemInformation(bridge *bridgeCfg) int {
 				totalNumberOfDevices = v
 			}
 		}
+
+		bridge.SystemInformation[c.Entries[i].Name] = c.Entries[i].Value
 
 		name := strings.Replace(c.Entries[i].Name, ".", "/", -1)
 		t := fmt.Sprint(bridge.Topic, "/", name)
@@ -276,6 +284,7 @@ func listen(bridge *bridgeCfg, topic string) {
 func running(bridge *bridgeCfg) {
 	log.Println("Running...")
 	refresh(bridge)
+	log.Println("Found:", identifier(bridge))
 	ticker := time.NewTicker(time.Duration(bridge.Polling) * time.Second)
 
 	go func() {
@@ -418,6 +427,7 @@ func createBridge() *bridgeCfg {
 		Topic:               *topic,
 		FullInformation:     *full,
 		LastNumberOfDevices: 0,
+		SystemInformation:   make(map[string]string),
 	}
 }
 
