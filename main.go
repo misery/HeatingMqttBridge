@@ -153,6 +153,12 @@ func propagate(bridge *bridgeCfg, name string, value string, prefix string) bool
 		for i := len(value); i < 4; i++ {
 			value += "0"
 		}
+	} else if stringSuffixInSlice(name, []string{"OPMode"}) {
+		if strings.EqualFold(value, "heat") || strings.EqualFold(value, "on") {
+			value = "0"
+		} else if strings.EqualFold(value, "off") {
+			value = "2"
+		}
 	}
 
 	data := prefix + "." + name + "=" + url.QueryEscape(value)
