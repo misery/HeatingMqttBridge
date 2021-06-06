@@ -26,6 +26,7 @@ package main
 import (
 	"bytes"
 	"crypto/tls"
+	"encoding/json"
 	"encoding/xml"
 	"flag"
 	"fmt"
@@ -49,6 +50,29 @@ var systemFieldsAdditional []string
 var roomFields []string
 var roomFieldsTemperature []string
 var roomSetFields []string
+
+type jsonClimateDiscoveryDevice struct {
+	Identifier string `json:"identifiers"`
+	Name       string `json:"name"`
+}
+
+type jsonClimateDiscovery struct {
+	Name       string                     `json:"name"`
+	ModeCmdT   string                     `json:"mode_cmd_t"`
+	ModeStatT  string                     `json:"mode_stat_t"`
+	AvtyT      string                     `json:"avty_t"`
+	PlAvail    string                     `json:"pl_avail"`
+	PlNotAvail string                     `json:"pl_not_avail"`
+	TempCmdT   string                     `json:"temp_cmd_t"`
+	TempStatT  string                     `json:"temp_stat_t"`
+	CurrTempT  string                     `json:"curr_temp_t"`
+	TempUnit   string                     `json:"temp_unit"`
+	MinTemp    string                     `json:"min_temp"`
+	MaxTemp    string                     `json:"max_temp"`
+	TempStep   string                     `json:"temp_step"`
+	Modes      []string                   `json:"modes"`
+	Device     jsonClimateDiscoveryDevice `json:"device"`
+}
 
 type content struct {
 	XMLName xml.Name       `xml:"content"`
@@ -185,6 +209,49 @@ func publish(bridge *bridgeCfg, topic string, value string) {
 	}
 }
 
+func publishJson(bridge *bridgeCfg, number string, name string, siUnit string,
+	sollTempMin string, sollTempMax string) {
+	id := identifier(bridge)
+	prefix := bridge.Topic + "/" + number
+	if siUnit == "0" {
+		siUnit = "C"
+	} else if siUnit == "1" {
+		siUnit = "F"
+	}
+
+	jsonDiscoveryDevice := jsonClimateDiscoveryDevice{
+		Identifier: id,
+		Name:       id,
+	}
+
+	jsonDiscovery := jsonClimateDiscovery{
+		Name:       name,
+		ModeCmdT:   prefix + "/set/OPMode",
+		ModeStatT:  prefix + "/OPMode_mode",
+		AvtyT:      bridge.Topic + "/available",
+		PlAvail:    "online",
+		PlNotAvail: "offline",
+		TempCmdT:   prefix + "/set/SollTemp",
+		TempStatT:  prefix + "/SollTemp",
+		CurrTempT:  prefix + "/RaumTemp",
+		TempUnit:   siUnit,
+		MinTemp:    sollTempMin,
+		MaxTemp:    sollTempMax,
+		TempStep:   "0.5",
+		Modes:      []string{"off", "heat"},
+		Device:     jsonDiscoveryDevice,
+	}
+
+	valueJson, err := json.Marshal(jsonDiscovery)
+	if err != nil {
+		log.Println(err)
+		return
+	}
+
+	haTopic := "homeassistant/climate/" + id + "/" + number + "/config"
+	publish(bridge, haTopic, string(valueJson))
+}
+
 func refreshSystemInformation(bridge *bridgeCfg) int {
 	fields := systemFields
 	if bridge.FullInformation {
@@ -229,12 +296,36 @@ func fetchTemperature(name string, value string) string {
 func refreshRoomInformation(bridge *bridgeCfg, number string) {
 	c := fetch(bridge.HeatingURL, roomFields, number+".")
 
+	name := number
+	siUnit := "C"
+	sollTempMin := "0"
+	sollTempMax := "30"
+
 	for i := 0; i < len(c.Entries); i++ {
-		name := strings.Replace(c.Entries[i].Name, ".", "/", -1)
-		t := fmt.Sprint(bridge.Topic, "/", name)
-		value := fetchTemperature(name, c.Entries[i].Value)
+		room := strings.Replace(c.Entries[i].Name, ".", "/", -1)
+		t := fmt.Sprint(bridge.Topic, "/", room)
+		value := fetchTemperature(room, c.Entries[i].Value)
 		publish(bridge, t, value)
+
+		if strings.HasSuffix(room, "OPMode") {
+			if value == "0" {
+				value = "heat"
+			} else if value == "2" {
+				value = "off"
+			}
+			publish(bridge, t+"_mode", value)
+		} else if strings.HasSuffix(room, "name") {
+			name = c.Entries[i].Value
+		} else if strings.HasSuffix(room, "TempSIUnit") {
+			siUnit = c.Entries[i].Value
+		} else if strings.HasSuffix(room, "SollTempMinVal") {
+			sollTempMin = fetchTemperature(room, c.Entries[i].Value)
+		} else if strings.HasSuffix(room, "SollTempMaxVal") {
+			sollTempMax = fetchTemperature(room, c.Entries[i].Value)
+		}
 	}
+
+	publishJson(bridge, number, name, siUnit, sollTempMin, sollTempMax)
 }
 
 func refresh(bridge *bridgeCfg) {
