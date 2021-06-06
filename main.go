@@ -283,6 +283,7 @@ func listen(bridge *bridgeCfg, topic string) {
 
 func running(bridge *bridgeCfg) {
 	log.Println("Running...")
+	publish(bridge, bridge.Topic+"/available", "online")
 	refresh(bridge)
 	log.Println("Found:", identifier(bridge))
 	ticker := time.NewTicker(time.Duration(bridge.Polling) * time.Second)
@@ -334,7 +335,7 @@ func connectLostHandler(client MQTT.Client, err error) {
 	log.Println("Connection lost", err)
 }
 
-func createClientOptions(broker string, user string, password string, cleansess bool) *MQTT.ClientOptions {
+func createClientOptions(broker string, user string, password string, cleansess bool, topic string) *MQTT.ClientOptions {
 	opts := MQTT.NewClientOptions()
 	opts.AddBroker(broker)
 	opts.SetClientID("HeatingMqttBridge")
@@ -344,6 +345,7 @@ func createClientOptions(broker string, user string, password string, cleansess 
 	opts.SetConnectionAttemptHandler(attemptHandler)
 	opts.SetOnConnectHandler(connectHandler)
 	opts.SetConnectionLostHandler(connectLostHandler)
+	opts.SetWill(topic+"/available", "offline", 0, true)
 	return opts
 }
 
@@ -418,7 +420,7 @@ func createBridge() *bridgeCfg {
 	}
 
 	return &bridgeCfg{
-		Client:              MQTT.NewClient(createClientOptions(*broker, *user, *password, *clean)),
+		Client:              MQTT.NewClient(createClientOptions(*broker, *user, *password, *clean, *topic)),
 		KeepRunning:         make(chan bool),
 		WriteChannel:        make(chan writeEvent, 50),
 		RefreshRoomChannel:  make(chan string, 50),
