@@ -201,8 +201,8 @@ func propagate(bridge *bridgeCfg, name string, value string, prefix string) bool
 	return false
 }
 
-func publish(bridge *bridgeCfg, topic string, value string) {
-	token := bridge.Client.Publish(topic, 0, false, value)
+func publish(bridge *bridgeCfg, topic string, value string, retained bool) {
+	token := bridge.Client.Publish(topic, 0, retained, value)
 	token.Wait()
 	if token.Error() != nil {
 		log.Println(token.Error())
@@ -249,7 +249,7 @@ func publishJson(bridge *bridgeCfg, number string, name string, siUnit string,
 	}
 
 	haTopic := "homeassistant/climate/" + id + "/" + number + "/config"
-	publish(bridge, haTopic, string(valueJson))
+	publish(bridge, haTopic, string(valueJson), false)
 }
 
 func refreshSystemInformation(bridge *bridgeCfg) int {
@@ -278,7 +278,7 @@ func refreshSystemInformation(bridge *bridgeCfg) int {
 
 		name := strings.Replace(c.Entries[i].Name, ".", "/", -1)
 		t := fmt.Sprint(bridge.Topic, "/", name)
-		publish(bridge, t, c.Entries[i].Value)
+		publish(bridge, t, c.Entries[i].Value, false)
 	}
 
 	return totalNumberOfDevices
@@ -305,7 +305,7 @@ func refreshRoomInformation(bridge *bridgeCfg, number string) {
 		room := strings.Replace(c.Entries[i].Name, ".", "/", -1)
 		t := fmt.Sprint(bridge.Topic, "/", room)
 		value := fetchTemperature(room, c.Entries[i].Value)
-		publish(bridge, t, value)
+		publish(bridge, t, value, true)
 
 		if strings.HasSuffix(room, "OPMode") {
 			if value == "0" {
@@ -313,7 +313,7 @@ func refreshRoomInformation(bridge *bridgeCfg, number string) {
 			} else if value == "2" {
 				value = "off"
 			}
-			publish(bridge, t+"_mode", value)
+			publish(bridge, t+"_mode", value, true)
 		} else if strings.HasSuffix(room, "name") {
 			name = c.Entries[i].Value
 		} else if strings.HasSuffix(room, "TempSIUnit") {
@@ -379,7 +379,7 @@ func listen(bridge *bridgeCfg, topic string) {
 
 func running(bridge *bridgeCfg) {
 	log.Println("Running...")
-	publish(bridge, bridge.Topic+"/available", "online")
+	publish(bridge, bridge.Topic+"/available", "online", true)
 	refresh(bridge)
 	log.Println("Found:", identifier(bridge))
 	ticker := time.NewTicker(time.Duration(bridge.Polling) * time.Second)
