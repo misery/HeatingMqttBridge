@@ -169,7 +169,7 @@ func propagate(bridge *bridgeCfg, name string, value string, prefix string) bool
 	if err == nil {
 		defer resp.Body.Close()
 		body, _ := ioutil.ReadAll(resp.Body)
-		bridge.RefreshRoomChannel <- prefix + "."
+		bridge.RefreshRoomChannel <- prefix
 		return string(body) == value
 	}
 
@@ -227,7 +227,7 @@ func fetchTemperature(name string, value string) string {
 }
 
 func refreshRoomInformation(bridge *bridgeCfg, number string) {
-	c := fetch(bridge.HeatingURL, roomFields, number)
+	c := fetch(bridge.HeatingURL, roomFields, number+".")
 
 	for i := 0; i < len(c.Entries); i++ {
 		name := strings.Replace(c.Entries[i].Name, ".", "/", -1)
@@ -267,8 +267,7 @@ func refresh(bridge *bridgeCfg) {
 	}
 
 	for i := 0; i < totalNumberOfDevices; i++ {
-		room := fmt.Sprint("G", i, ".")
-		bridge.RefreshRoomChannel <- room
+		bridge.RefreshRoomChannel <- fmt.Sprint("G", i)
 	}
 }
 
