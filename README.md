@@ -68,8 +68,7 @@ Be aware that ``Gx`` needs a valid room number like ``G0``, ``G1`` and so on.
   - ``2`` Holiday (normally **Off**)
 
 ### Available topic
-If the HeatingMqttBridge is ``online/offline`` can be checked with ``available`` topic that
-will a retainted last will.
+If this bridge is ``online`` or ``offline`` can be checked with ``available`` topic.
 
 ### Auto discovery
 It is possible to use auto-discovery support of Home Assistant and openhab (https://github.com/openhab/openhab-addons/issues/10764).
