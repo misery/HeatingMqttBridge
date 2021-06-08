@@ -489,7 +489,7 @@ func createBridge() *bridgeCfg {
 	password := flag.String("password", "", "The password (optional)")
 	user := flag.String("user", "", "The User (optional)")
 	clean := flag.Bool("clean", false, "Set clean Session")
-	polling := flag.Int("polling", 90, "Refresh interval in seconds")
+	polling := flag.Int("polling", 300, "Refresh interval in seconds")
 	full := flag.Bool("full", false, "Provide full information to broker")
 	flag.Parse()
 

@@ -18,7 +18,7 @@ All parameters can be passed via cmdline arguments or via environment variables.
 - ``-password`` / ``BROKER_PSW`` Password of your MQTT broker. (optional)
 - ``-topic`` / ``TOPIC`` Topic-Prefix of provided information. (optional, "roth" as default)
 - ``-clean`` / ``CLEAN`` Set clean session for MQTT. (optional)
-- ``-polling`` / ``POLLING`` Refresh interval in seconds. (optional, 90 seconds default)
+- ``-polling`` / ``POLLING`` Refresh interval in seconds. (optional, 300 seconds as default)
 - ``-full`` / ``FULL`` Provide any information to broker, most times this is not necessary. (optional)
 
 
