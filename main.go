@@ -347,15 +347,15 @@ func refreshRoomInformation(bridge *bridgeCfg, number string) {
 			}
 			publish(bridge, t+"_mode", value, true)
 		} else if strings.HasSuffix(room, "name") {
-			name = c.Entries[i].Value
+			name = value
 		} else if strings.HasSuffix(room, "RaumTemp") {
 			raumTemp = value
 		} else if strings.HasSuffix(room, "TempSIUnit") {
-			siUnit = c.Entries[i].Value
+			siUnit = value
 		} else if strings.HasSuffix(room, "SollTempMinVal") {
-			sollTempMin = fetchTemperature(room, c.Entries[i].Value)
+			sollTempMin = value
 		} else if strings.HasSuffix(room, "SollTempMaxVal") {
-			sollTempMax = fetchTemperature(room, c.Entries[i].Value)
+			sollTempMax = value
 		}
 	}
 
