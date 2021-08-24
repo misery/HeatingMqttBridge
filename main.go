@@ -44,12 +44,19 @@ import (
 	MQTT "github.com/eclipse/paho.mqtt.golang"
 )
 
+var lastTempChange map[string]tempChange = make(map[string]tempChange)
+
 var systemFields []string
 var systemFieldsAdditional []string
 
 var roomFields []string
 var roomFieldsTemperature []string
 var roomSetFields []string
+
+type tempChange struct {
+	Temp string
+	Time time.Time
+}
 
 type jsonClimateDiscoveryDevice struct {
 	Identifier string `json:"identifiers"`
@@ -201,6 +208,30 @@ func propagate(bridge *bridgeCfg, name string, value string, prefix string) bool
 	return false
 }
 
+func checkLastTempChange(bridge *bridgeCfg, number string, value string) {
+	lastChange := lastTempChange[number]
+
+	if lastChange.Temp == value {
+		return
+	}
+
+	lastTempChange[number] = tempChange{
+		Temp: value,
+		Time: time.Now(),
+	}
+
+	if lastChange.Time.IsZero() {
+		return
+	}
+
+	maxLastChangeTime := lastChange.Time.Add(time.Hour * 24)
+	if time.Now().After(maxLastChangeTime) {
+		log.Println("No temperature change in 24 hours:", number)
+		prefix := bridge.Topic + "/" + number + "/RaumTempLastChange"
+		publish(bridge, prefix, lastChange.Time.String(), false)
+	}
+}
+
 func publish(bridge *bridgeCfg, topic string, value string, retained bool) {
 	token := bridge.Client.Publish(topic, 0, retained, value)
 	token.Wait()
@@ -298,6 +329,7 @@ func refreshRoomInformation(bridge *bridgeCfg, number string) {
 
 	name := number
 	siUnit := "C"
+	raumTemp := "0"
 	sollTempMin := "0"
 	sollTempMax := "30"
 
@@ -316,6 +348,8 @@ func refreshRoomInformation(bridge *bridgeCfg, number string) {
 			publish(bridge, t+"_mode", value, true)
 		} else if strings.HasSuffix(room, "name") {
 			name = c.Entries[i].Value
+		} else if strings.HasSuffix(room, "RaumTemp") {
+			raumTemp = value
 		} else if strings.HasSuffix(room, "TempSIUnit") {
 			siUnit = c.Entries[i].Value
 		} else if strings.HasSuffix(room, "SollTempMinVal") {
@@ -325,6 +359,7 @@ func refreshRoomInformation(bridge *bridgeCfg, number string) {
 		}
 	}
 
+	checkLastTempChange(bridge, number, raumTemp)
 	publishJson(bridge, number, name, siUnit, sollTempMin, sollTempMax)
 }
 
