@@ -551,7 +551,7 @@ func createBridge() *bridgeCfg {
 	}
 
 	if *polling < 0 {
-		*polling = 90
+		*polling = 300
 	}
 
 	if *tempchange < 0 {
