@@ -73,9 +73,9 @@ If this bridge is ``online`` or ``offline`` can be checked with ``available`` to
 
 ### Low / no battery detection
 The EnergyLogic has no indicator to show low or no battery on a wireless controller.
-It just stops sending temperature values. So we send a ``Gx/RaumTempLastChange```
+It just stops sending temperature values. So we send a ``Gx/RaumTempLastChange``
 warning if the tempatures of a room has no changes in 24 hours. This is configurable
-with the ```-tempchange``` parameter.
+with the ``-tempchange`` parameter.
 
 ### Auto discovery
 It is possible to use auto-discovery support of Home Assistant and openhab (https://github.com/openhab/openhab-addons/issues/10764).
