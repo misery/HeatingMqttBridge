@@ -105,6 +105,7 @@ type bridgeCfg struct {
 	RefreshRoomChannel  chan string
 	HeatingURL          string
 	Polling             int
+	TempChange          int
 	Topic               string
 	FullInformation     bool
 	LastNumberOfDevices int
@@ -212,23 +213,18 @@ func checkLastTempChange(bridge *bridgeCfg, number string, value string) {
 	lastChange := lastTempChange[number]
 
 	if lastChange.Temp == value {
+		maxLastChangeTime := lastChange.Time.Add(time.Hour * time.Duration(bridge.TempChange))
+		if time.Now().After(maxLastChangeTime) {
+			log.Println("No temperature change in 24 hours:", number)
+			prefix := bridge.Topic + "/" + number + "/RaumTempLastChange"
+			publish(bridge, prefix, lastChange.Time.String(), false)
+		}
 		return
 	}
 
 	lastTempChange[number] = tempChange{
 		Temp: value,
 		Time: time.Now(),
-	}
-
-	if lastChange.Time.IsZero() {
-		return
-	}
-
-	maxLastChangeTime := lastChange.Time.Add(time.Hour * 24)
-	if time.Now().After(maxLastChangeTime) {
-		log.Println("No temperature change in 24 hours:", number)
-		prefix := bridge.Topic + "/" + number + "/RaumTempLastChange"
-		publish(bridge, prefix, lastChange.Time.String(), false)
 	}
 }
 
@@ -525,6 +521,7 @@ func createBridge() *bridgeCfg {
 	user := flag.String("user", "", "The User (optional)")
 	clean := flag.Bool("clean", false, "Set clean Session")
 	polling := flag.Int("polling", 300, "Refresh interval in seconds")
+	tempchange := flag.Int("tempchange", 24, "Temperature change warning in hours")
 	full := flag.Bool("full", false, "Provide full information to broker")
 	flag.Parse()
 
@@ -544,10 +541,21 @@ func createBridge() *bridgeCfg {
 				*polling = v
 			}
 		}
+
+		if !isFlagPassed("tempchange") {
+			v, err := strconv.Atoi(os.Getenv("TEMPCHANGE"))
+			if err == nil {
+				*tempchange = v
+			}
+		}
 	}
 
 	if *polling < 0 {
 		*polling = 90
+	}
+
+	if *tempchange < 0 {
+		*tempchange = 24
 	}
 
 	return &bridgeCfg{
@@ -557,6 +565,7 @@ func createBridge() *bridgeCfg {
 		RefreshRoomChannel:  make(chan string, 50),
 		HeatingURL:          *heating,
 		Polling:             *polling,
+		TempChange:          *tempchange,
 		Topic:               *topic,
 		FullInformation:     *full,
 		LastNumberOfDevices: 0,
