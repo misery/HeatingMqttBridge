@@ -215,7 +215,7 @@ func checkLastTempChange(bridge *bridgeCfg, number string, value string) {
 	if lastChange.Temp == value {
 		maxLastChangeTime := lastChange.Time.Add(time.Hour * time.Duration(bridge.TempChange))
 		if time.Now().After(maxLastChangeTime) {
-			log.Println("No temperature change in 24 hours:", number)
+			log.Println("No temperature change:", number)
 			prefix := bridge.Topic + "/" + number + "/RaumTempLastChange"
 			publish(bridge, prefix, lastChange.Time.String(), false)
 		}
