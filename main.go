@@ -54,8 +54,10 @@ var roomFieldsTemperature []string
 var roomSetFields []string
 
 type tempChange struct {
-	Temp string
-	Time time.Time
+	Temp    string
+	Time    time.Time
+	MinTemp float64
+	MaxTemp float64
 }
 
 type jsonClimateDiscoveryDevice struct {
@@ -179,8 +181,24 @@ func fetch(ip string, values []string, prefix string) content {
 	return c
 }
 
+func checkTemperatureSanity(prefix string, value string) bool {
+	lastChange := lastTempChange[prefix]
+
+	if userValue, err := strconv.ParseFloat(value, 64); err == nil {
+		return userValue <= lastChange.MaxTemp && userValue >= lastChange.MinTemp
+	}
+
+	log.Println("Cannot convert compare values:", value, lastChange.MinTemp, lastChange.MaxTemp)
+	return false
+}
+
 func propagate(bridge *bridgeCfg, name string, value string, prefix string) bool {
 	if stringSuffixInSlice(name, roomFieldsTemperature) {
+		if !checkTemperatureSanity(prefix, value) {
+			log.Println("Propagate canceled | Value is not valid:", value)
+			return false
+		}
+
 		value = strings.Replace(value, ".", "", -1)
 		for i := len(value); i < 4; i++ {
 			value += "0"
@@ -209,7 +227,8 @@ func propagate(bridge *bridgeCfg, name string, value string, prefix string) bool
 	return false
 }
 
-func checkLastTempChange(bridge *bridgeCfg, number string, value string) {
+func checkLastTempChange(bridge *bridgeCfg, number string, value string,
+	sollTempMin string, sollTempMax string) {
 	lastChange := lastTempChange[number]
 
 	if lastChange.Temp == value {
@@ -222,9 +241,13 @@ func checkLastTempChange(bridge *bridgeCfg, number string, value string) {
 		return
 	}
 
+	minTemp, _ := strconv.ParseFloat(sollTempMin, 64)
+	maxTemp, _ := strconv.ParseFloat(sollTempMax, 64)
 	lastTempChange[number] = tempChange{
-		Temp: value,
-		Time: time.Now(),
+		Temp:    value,
+		Time:    time.Now(),
+		MinTemp: minTemp,
+		MaxTemp: maxTemp,
 	}
 }
 
@@ -355,7 +378,7 @@ func refreshRoomInformation(bridge *bridgeCfg, number string) {
 		}
 	}
 
-	checkLastTempChange(bridge, number, raumTemp)
+	checkLastTempChange(bridge, number, raumTemp, sollTempMin, sollTempMax)
 	publishJson(bridge, number, name, siUnit, sollTempMin, sollTempMax)
 }
 
