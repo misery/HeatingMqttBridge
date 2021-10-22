@@ -318,8 +318,7 @@ func refreshSystemInformation(bridge *bridgeCfg) int {
 		}
 
 		if c.Entries[i].Name == "totalNumberOfDevices" {
-			v, err := strconv.Atoi(c.Entries[i].Value)
-			if err == nil {
+			if v, err := strconv.Atoi(c.Entries[i].Value); err == nil {
 				totalNumberOfDevices = v
 			}
 		}
@@ -518,8 +517,7 @@ func setStringParam(param *string, envName string, useEnv bool, defaultValue str
 
 func setBoolParam(value *bool, name string) {
 	if !isFlagPassed(name) {
-		v, err := strconv.ParseBool(os.Getenv(strings.ToUpper(name)))
-		if err == nil {
+		if v, err := strconv.ParseBool(os.Getenv(strings.ToUpper(name))); err == nil {
 			*value = v
 		}
 	}
@@ -559,15 +557,13 @@ func createBridge() *bridgeCfg {
 		setBoolParam(full, "full")
 
 		if !isFlagPassed("polling") {
-			v, err := strconv.Atoi(os.Getenv("POLLING"))
-			if err == nil {
+			if v, err := strconv.Atoi(os.Getenv("POLLING")); err == nil {
 				*polling = v
 			}
 		}
 
 		if !isFlagPassed("tempchange") {
-			v, err := strconv.Atoi(os.Getenv("TEMPCHANGE"))
-			if err == nil {
+			if v, err := strconv.Atoi(os.Getenv("TEMPCHANGE")); err == nil {
 				*tempchange = v
 			}
 		}
