@@ -44,7 +44,7 @@ import (
 	MQTT "github.com/eclipse/paho.mqtt.golang"
 )
 
-var lastTempChange map[string]tempChange = make(map[string]tempChange)
+var lastTempChange = make(map[string]tempChange)
 
 var systemFields []string
 var systemFieldsAdditional []string
@@ -259,7 +259,7 @@ func publish(bridge *bridgeCfg, topic string, value string, retained bool) {
 	}
 }
 
-func publishJson(bridge *bridgeCfg, number string, name string, siUnit string,
+func publishJSON(bridge *bridgeCfg, number string, name string, siUnit string,
 	sollTempMin string, sollTempMax string) {
 	id := identifier(bridge)
 	prefix := bridge.Topic + "/" + number
@@ -292,14 +292,14 @@ func publishJson(bridge *bridgeCfg, number string, name string, siUnit string,
 		Device:     jsonDiscoveryDevice,
 	}
 
-	valueJson, err := json.Marshal(jsonDiscovery)
+	valueJSON, err := json.Marshal(jsonDiscovery)
 	if err != nil {
 		log.Println(err)
 		return
 	}
 
 	haTopic := "homeassistant/climate/" + id + "/" + number + "/config"
-	publish(bridge, haTopic, string(valueJson), false)
+	publish(bridge, haTopic, string(valueJSON), false)
 }
 
 func refreshSystemInformation(bridge *bridgeCfg) int {
@@ -379,7 +379,7 @@ func refreshRoomInformation(bridge *bridgeCfg, number string) {
 	}
 
 	checkLastTempChange(bridge, number, raumTemp, sollTempMin, sollTempMax)
-	publishJson(bridge, number, name, siUnit, sollTempMin, sollTempMax)
+	publishJSON(bridge, number, name, siUnit, sollTempMin, sollTempMax)
 }
 
 func refresh(bridge *bridgeCfg) {
