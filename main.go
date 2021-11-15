@@ -199,6 +199,10 @@ func propagate(bridge *bridgeCfg, name string, value string, prefix string) bool
 			return false
 		}
 
+		if len(value) > 5 {
+			value = value[:5] // cut off 20.123456789
+		}
+
 		value = strings.Replace(value, ".", "", -1)
 		for i := len(value); i < 4; i++ {
 			value += "0"
