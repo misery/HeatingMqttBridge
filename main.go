@@ -81,6 +81,7 @@ type jsonClimateDiscovery struct {
 	TempStep   string                     `json:"temp_step"`
 	Modes      []string                   `json:"modes"`
 	Device     jsonClimateDiscoveryDevice `json:"device"`
+	UniqueId   string                     `json:"unique_id"`
 }
 
 type content struct {
@@ -294,6 +295,7 @@ func publishJSON(bridge *bridgeCfg, number string, name string, siUnit string,
 		TempStep:   "0.5",
 		Modes:      []string{"off", "heat"},
 		Device:     jsonDiscoveryDevice,
+		UniqueId:   id + "-" + number,
 	}
 
 	valueJSON, err := json.Marshal(jsonDiscovery)
