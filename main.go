@@ -65,23 +65,28 @@ type jsonClimateDiscoveryDevice struct {
 	Name       string `json:"name"`
 }
 
+type jsonClimateAvailability struct {
+	Topic    string `json:"topic"`
+	Avail    string `json:"pl_avail"`
+	NotAvail string `json:"pl_not_avail"`
+}
+
 type jsonClimateDiscovery struct {
-	Name       string                     `json:"name"`
-	ModeCmdT   string                     `json:"mode_cmd_t"`
-	ModeStatT  string                     `json:"mode_stat_t"`
-	AvtyT      string                     `json:"avty_t"`
-	PlAvail    string                     `json:"pl_avail"`
-	PlNotAvail string                     `json:"pl_not_avail"`
-	TempCmdT   string                     `json:"temp_cmd_t"`
-	TempStatT  string                     `json:"temp_stat_t"`
-	CurrTempT  string                     `json:"curr_temp_t"`
-	TempUnit   string                     `json:"temp_unit"`
-	MinTemp    string                     `json:"min_temp"`
-	MaxTemp    string                     `json:"max_temp"`
-	TempStep   string                     `json:"temp_step"`
-	Modes      []string                   `json:"modes"`
-	Device     jsonClimateDiscoveryDevice `json:"device"`
-	UniqueId   string                     `json:"unique_id"`
+	Name      string                     `json:"name"`
+	ModeCmdT  string                     `json:"mode_cmd_t"`
+	ModeStatT string                     `json:"mode_stat_t"`
+	Avty      []jsonClimateAvailability  `json:"avty"`
+	AvtyMode  string                     `json:"avty_mode"`
+	TempCmdT  string                     `json:"temp_cmd_t"`
+	TempStatT string                     `json:"temp_stat_t"`
+	CurrTempT string                     `json:"curr_temp_t"`
+	TempUnit  string                     `json:"temp_unit"`
+	MinTemp   string                     `json:"min_temp"`
+	MaxTemp   string                     `json:"max_temp"`
+	TempStep  string                     `json:"temp_step"`
+	Modes     []string                   `json:"modes"`
+	Device    jsonClimateDiscoveryDevice `json:"device"`
+	UniqueId  string                     `json:"unique_id"`
 }
 
 type content struct {
@@ -234,14 +239,20 @@ func propagate(bridge *bridgeCfg, name string, value string, prefix string) bool
 
 func checkLastTempChange(bridge *bridgeCfg, number string, value string,
 	sollTempMin string, sollTempMax string) {
+	prefix := bridge.Topic + "/" + number
+	deferedState := "online"
+	defer func(state *string) {
+		publish(bridge, prefix+"/available", *state, true)
+	}(&deferedState)
+
 	lastChange := lastTempChange[number]
 
 	if lastChange.Temp == value {
 		maxLastChangeTime := lastChange.Time.Add(time.Hour * time.Duration(bridge.TempChange))
 		if time.Now().After(maxLastChangeTime) {
 			log.Println("No temperature change:", number)
-			prefix := bridge.Topic + "/" + number + "/RaumTempLastChange"
-			publish(bridge, prefix, lastChange.Time.String(), false)
+			deferedState = "offline"
+			publish(bridge, prefix+"/RaumTempLastChange", lastChange.Time.String(), false)
 		}
 		return
 	}
@@ -279,23 +290,34 @@ func publishJSON(bridge *bridgeCfg, number string, name string, siUnit string,
 		Name:       id,
 	}
 
+	jsonAvailability := []jsonClimateAvailability{
+		{
+			Topic:    prefix + "/available",
+			Avail:    "online",
+			NotAvail: "offline",
+		},
+		{
+			Topic:    bridge.Topic + "/available",
+			Avail:    "online",
+			NotAvail: "offline",
+		}}
+
 	jsonDiscovery := jsonClimateDiscovery{
-		Name:       name,
-		ModeCmdT:   prefix + "/set/OPMode",
-		ModeStatT:  prefix + "/OPMode_mode",
-		AvtyT:      bridge.Topic + "/available",
-		PlAvail:    "online",
-		PlNotAvail: "offline",
-		TempCmdT:   prefix + "/set/SollTemp",
-		TempStatT:  prefix + "/SollTemp",
-		CurrTempT:  prefix + "/RaumTemp",
-		TempUnit:   siUnit,
-		MinTemp:    sollTempMin,
-		MaxTemp:    sollTempMax,
-		TempStep:   "0.5",
-		Modes:      []string{"off", "heat"},
-		Device:     jsonDiscoveryDevice,
-		UniqueId:   id + "-" + number,
+		Name:      name,
+		ModeCmdT:  prefix + "/set/OPMode",
+		ModeStatT: prefix + "/OPMode_mode",
+		Avty:      jsonAvailability,
+		AvtyMode:  "all",
+		TempCmdT:  prefix + "/set/SollTemp",
+		TempStatT: prefix + "/SollTemp",
+		CurrTempT: prefix + "/RaumTemp",
+		TempUnit:  siUnit,
+		MinTemp:   sollTempMin,
+		MaxTemp:   sollTempMax,
+		TempStep:  "0.5",
+		Modes:     []string{"off", "heat"},
+		Device:    jsonDiscoveryDevice,
+		UniqueId:  id + "-" + number,
 	}
 
 	valueJSON, err := json.Marshal(jsonDiscovery)

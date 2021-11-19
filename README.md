@@ -70,12 +70,17 @@ Be aware that ``Gx`` needs a valid room number like ``G0``, ``G1`` and so on.
 
 ### Available topic
 If this bridge is ``online`` or ``offline`` can be checked with ``available`` topic.
+The topic ``available`` under ``Gx`` indicates "no battery detection". This bridges
+exposes both ``available`` topics to home assistant auto discovery. So all ``availabe``
+needs to be ``online``. Otherwise all or a single climate is ``N/A``. This depends
+on ``bridge not running`` or ``no battery``.
 
 ### Low / no battery detection
 The EnergyLogic has no indicator to show low or no battery on a wireless controller.
 It just stops sending temperature values. So we send a ``Gx/RaumTempLastChange``
 warning if the tempatures of a room has no changes in 24 hours. This is configurable
 with the ``-tempchange`` parameter.
+The ``Gx/available`` topic will be switched to offline after that.
 
 ### Auto discovery
 It is possible to use auto-discovery support of Home Assistant and openhab (https://github.com/openhab/openhab-addons/issues/10764).
