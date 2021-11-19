@@ -44,6 +44,8 @@ import (
 	MQTT "github.com/eclipse/paho.mqtt.golang"
 )
 
+var bridge *bridgeCfg
+
 var lastTempChange = make(map[string]tempChange)
 
 var systemFields []string
@@ -410,6 +412,8 @@ func refreshRoomInformation(bridge *bridgeCfg, number string) {
 }
 
 func refresh(bridge *bridgeCfg) {
+	publish(bridge, bridge.Topic+"/available", "online", true)
+	modified := false
 	totalNumberOfDevices := refreshSystemInformation(bridge)
 
 	if totalNumberOfDevices > bridge.LastNumberOfDevices {
@@ -417,6 +421,7 @@ func refresh(bridge *bridgeCfg) {
 		for i := firstNewDevice; i < totalNumberOfDevices; i++ {
 			prefix := fmt.Sprint("G", i)
 			log.Println("Add room:", prefix)
+			modified = true
 			for _, name := range roomSetFields {
 				topic := fmt.Sprint(bridge.Topic, "/", prefix, "/set/", name)
 				listen(bridge, topic)
@@ -429,6 +434,7 @@ func refresh(bridge *bridgeCfg) {
 		for i := totalNumberOfDevices; i < bridge.LastNumberOfDevices; i++ {
 			prefix := fmt.Sprint("G", i)
 			log.Println("Remove room:", prefix)
+			modified = true
 			for _, name := range roomSetFields {
 				topic := fmt.Sprint(bridge.Topic, "/", prefix, "/set/", name)
 				bridge.Client.Unsubscribe(topic)
@@ -440,6 +446,10 @@ func refresh(bridge *bridgeCfg) {
 
 	for i := 0; i < totalNumberOfDevices; i++ {
 		bridge.RefreshRoomChannel <- fmt.Sprint("G", i)
+	}
+
+	if modified {
+		log.Println("Host:", identifier(bridge))
 	}
 }
 
@@ -460,9 +470,6 @@ func listen(bridge *bridgeCfg, topic string) {
 
 func running(bridge *bridgeCfg) {
 	log.Println("Running...")
-	publish(bridge, bridge.Topic+"/available", "online", true)
-	refresh(bridge)
-	log.Println("Found:", identifier(bridge))
 	ticker := time.NewTicker(time.Duration(bridge.Polling) * time.Second)
 
 	go func() {
@@ -471,7 +478,7 @@ func running(bridge *bridgeCfg) {
 			case <-bridge.KeepRunning:
 				return
 			case <-ticker.C:
-				refresh(bridge)
+				bridge.RefreshRoomChannel <- ""
 			}
 		}
 	}()
@@ -493,7 +500,11 @@ func running(bridge *bridgeCfg) {
 			case <-bridge.KeepRunning:
 				return
 			case room := <-bridge.RefreshRoomChannel:
-				refreshRoomInformation(bridge, room)
+				if room == "" {
+					refresh(bridge)
+				} else {
+					refreshRoomInformation(bridge, room)
+				}
 			}
 		}
 	}()
@@ -506,6 +517,7 @@ func attemptHandler(broker *url.URL, tlsCfg *tls.Config) *tls.Config {
 
 func connectHandler(client MQTT.Client) {
 	log.Println("Connected")
+	bridge.RefreshRoomChannel <- ""
 }
 
 func connectLostHandler(client MQTT.Client, err error) {
@@ -659,7 +671,7 @@ func setFields() {
 }
 
 func main() {
-	bridge := createBridge()
+	bridge = createBridge()
 	setupCloseHandler(bridge)
 
 	if token := bridge.Client.Connect(); token.Wait() && token.Error() != nil {
