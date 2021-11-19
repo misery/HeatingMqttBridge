@@ -63,8 +63,9 @@ type tempChange struct {
 }
 
 type jsonClimateDiscoveryDevice struct {
-	Identifier string `json:"identifiers"`
-	Name       string `json:"name"`
+	Identifier string     `json:"identifiers"`
+	Name       string     `json:"name"`
+	Cns        [][]string `json:"cns"`
 }
 
 type jsonClimateAvailability struct {
@@ -287,9 +288,11 @@ func publishJSON(bridge *bridgeCfg, number string, name string, siUnit string,
 		siUnit = "F"
 	}
 
+	mac := strings.Replace(bridge.SystemInformation["hw.Addr"], "-", ":", -1)
 	jsonDiscoveryDevice := jsonClimateDiscoveryDevice{
 		Identifier: id,
 		Name:       id,
+		Cns:        [][]string{{"mac", mac}},
 	}
 
 	jsonAvailability := []jsonClimateAvailability{
