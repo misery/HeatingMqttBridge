@@ -92,6 +92,18 @@ type jsonClimateDiscovery struct {
 	UniqueId  string                     `json:"unique_id"`
 }
 
+type jsonSensorDiscovery struct {
+	Name              string                     `json:"name"`
+	Avty              []jsonClimateAvailability  `json:"avty"`
+	AvtyMode          string                     `json:"avty_mode"`
+	StateTopic        string                     `json:"stat_t"`
+	UnitOfMeasurement string                     `json:"unit_of_meas"`
+	StateClass        string                     `json:"stat_cla"`
+	DeviceClass       string                     `json:"dev_cla"`
+	Device            jsonClimateDiscoveryDevice `json:"device"`
+	UniqueId          string                     `json:"unique_id"`
+}
+
 type content struct {
 	XMLName xml.Name       `xml:"content"`
 	Entries []contentValue `xml:"field"`
@@ -307,12 +319,14 @@ func publishJSON(bridge *bridgeCfg, number string, name string, siUnit string,
 			NotAvail: "offline",
 		}}
 
-	jsonDiscovery := jsonClimateDiscovery{
+	jsonDiscoveryClimate := jsonClimateDiscovery{
 		Name:      name,
-		ModeCmdT:  prefix + "/set/OPMode",
-		ModeStatT: prefix + "/OPMode_mode",
 		Avty:      jsonAvailability,
 		AvtyMode:  "all",
+		UniqueId:  id + "-" + number,
+		Device:    jsonDiscoveryDevice,
+		ModeCmdT:  prefix + "/set/OPMode",
+		ModeStatT: prefix + "/OPMode_mode",
 		TempCmdT:  prefix + "/set/SollTemp",
 		TempStatT: prefix + "/SollTemp",
 		CurrTempT: prefix + "/RaumTemp",
@@ -321,18 +335,37 @@ func publishJSON(bridge *bridgeCfg, number string, name string, siUnit string,
 		MaxTemp:   sollTempMax,
 		TempStep:  "0.5",
 		Modes:     []string{"off", "heat"},
-		Device:    jsonDiscoveryDevice,
-		UniqueId:  id + "-" + number,
 	}
 
-	valueJSON, err := json.Marshal(jsonDiscovery)
+	jsonDiscoverySensor := jsonSensorDiscovery{
+		Name:              name,
+		Avty:              jsonAvailability,
+		AvtyMode:          "all",
+		UniqueId:          id + "-sensor-" + number,
+		Device:            jsonDiscoveryDevice,
+		StateTopic:        prefix + "/RaumTemp",
+		UnitOfMeasurement: "°" + siUnit,
+		StateClass:        "measurement",
+		DeviceClass:       "temperature",
+	}
+
+	climateValueJSON, err := json.Marshal(jsonDiscoveryClimate)
 	if err != nil {
 		log.Println(err)
 		return
 	}
 
-	haTopic := "homeassistant/climate/" + id + "/" + number + "/config"
-	publish(bridge, haTopic, string(valueJSON), false)
+	sensorValueJSON, err := json.Marshal(jsonDiscoverySensor)
+	if err != nil {
+		log.Println(err)
+		return
+	}
+
+	climateTopic := "homeassistant/climate/" + id + "/" + number + "/config"
+	publish(bridge, climateTopic, string(climateValueJSON), false)
+
+	sensorTopic := "homeassistant/sensor/" + id + "/" + number + "/config"
+	publish(bridge, sensorTopic, string(sensorValueJSON), false)
 }
 
 func refreshSystemInformation(bridge *bridgeCfg) int {
