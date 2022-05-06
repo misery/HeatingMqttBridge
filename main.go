@@ -454,6 +454,7 @@ func refresh(bridge *bridgeCfg) {
 	if bridge.LastNumberOfDevices == -1 {
 		bridge.LastNumberOfDevices = 0 // initialized!
 		log.Println("Host:", identifier(bridge))
+		listenStateHA(bridge)
 	}
 
 	if totalNumberOfDevices > bridge.LastNumberOfDevices {
@@ -485,6 +486,15 @@ func refresh(bridge *bridgeCfg) {
 	for i := 0; i < totalNumberOfDevices; i++ {
 		bridge.RefreshRoomChannel <- fmt.Sprint("G", i)
 	}
+}
+
+func listenStateHA(bridge *bridgeCfg) {
+	bridge.Client.Subscribe("homeassistant/status", 0, func(client MQTT.Client, msg MQTT.Message) {
+		payload := string(msg.Payload())
+		if payload == "online" {
+			bridge.RefreshRoomChannel <- ""
+		}
+	})
 }
 
 func listen(bridge *bridgeCfg, topic string) {
