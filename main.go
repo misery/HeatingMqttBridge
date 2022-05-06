@@ -449,15 +449,18 @@ func refreshRoomInformation(bridge *bridgeCfg, number string) {
 
 func refresh(bridge *bridgeCfg) {
 	publish(bridge, bridge.Topic+"/available", "online", true)
-	modified := false
 	totalNumberOfDevices := refreshSystemInformation(bridge)
+
+	if bridge.LastNumberOfDevices == -1 {
+		bridge.LastNumberOfDevices = 0 // initialized!
+		log.Println("Host:", identifier(bridge))
+	}
 
 	if totalNumberOfDevices > bridge.LastNumberOfDevices {
 		firstNewDevice := totalNumberOfDevices - (totalNumberOfDevices - bridge.LastNumberOfDevices)
 		for i := firstNewDevice; i < totalNumberOfDevices; i++ {
 			prefix := fmt.Sprint("G", i)
 			log.Println("Add room:", prefix)
-			modified = true
 			for _, name := range roomSetFields {
 				topic := fmt.Sprint(bridge.Topic, "/", prefix, "/set/", name)
 				listen(bridge, topic)
@@ -470,7 +473,6 @@ func refresh(bridge *bridgeCfg) {
 		for i := totalNumberOfDevices; i < bridge.LastNumberOfDevices; i++ {
 			prefix := fmt.Sprint("G", i)
 			log.Println("Remove room:", prefix)
-			modified = true
 			for _, name := range roomSetFields {
 				topic := fmt.Sprint(bridge.Topic, "/", prefix, "/set/", name)
 				bridge.Client.Unsubscribe(topic)
@@ -482,10 +484,6 @@ func refresh(bridge *bridgeCfg) {
 
 	for i := 0; i < totalNumberOfDevices; i++ {
 		bridge.RefreshRoomChannel <- fmt.Sprint("G", i)
-	}
-
-	if modified {
-		log.Println("Host:", identifier(bridge))
 	}
 }
 
@@ -553,6 +551,8 @@ func attemptHandler(broker *url.URL, tlsCfg *tls.Config) *tls.Config {
 
 func connectHandler(client MQTT.Client) {
 	log.Println("Connected")
+	// just reset if connection was lost
+	bridge.LastNumberOfDevices = -1
 	bridge.RefreshRoomChannel <- ""
 }
 
@@ -663,7 +663,7 @@ func createBridge() *bridgeCfg {
 		TempChange:          *tempchange,
 		Topic:               *topic,
 		FullInformation:     *full,
-		LastNumberOfDevices: 0,
+		LastNumberOfDevices: -1,
 		SystemInformation:   make(map[string]string),
 	}
 }
