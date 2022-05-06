@@ -1,7 +1,7 @@
 FROM golang:1.18-alpine AS builder
 
 WORKDIR /src
-COPY . .
+COPY main.go go.mod go.sum /src/
 RUN CGO_ENABLED=0 go build -ldflags="-s -w"
 
 
