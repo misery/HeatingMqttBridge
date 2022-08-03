@@ -89,7 +89,7 @@ type jsonClimateDiscovery struct {
 	TempStep  string                     `json:"temp_step"`
 	Modes     []string                   `json:"modes"`
 	Device    jsonClimateDiscoveryDevice `json:"device"`
-	UniqueId  string                     `json:"unique_id"`
+	UniqueID  string                     `json:"unique_id"`
 }
 
 type jsonSensorDiscovery struct {
@@ -101,7 +101,7 @@ type jsonSensorDiscovery struct {
 	StateClass        string                     `json:"stat_cla"`
 	DeviceClass       string                     `json:"dev_cla"`
 	Device            jsonClimateDiscoveryDevice `json:"device"`
-	UniqueId          string                     `json:"unique_id"`
+	UniqueID          string                     `json:"unique_id"`
 }
 
 type content struct {
@@ -323,7 +323,7 @@ func publishJSON(bridge *bridgeCfg, number string, name string, siUnit string,
 		Name:      name,
 		Avty:      jsonAvailability,
 		AvtyMode:  "all",
-		UniqueId:  id + "-" + number,
+		UniqueID:  id + "-" + number,
 		Device:    jsonDiscoveryDevice,
 		ModeCmdT:  prefix + "/set/OPMode",
 		ModeStatT: prefix + "/OPMode_mode",
@@ -341,7 +341,7 @@ func publishJSON(bridge *bridgeCfg, number string, name string, siUnit string,
 		Name:              name,
 		Avty:              jsonAvailability,
 		AvtyMode:          "all",
-		UniqueId:          id + "-sensor-" + number,
+		UniqueID:          id + "-sensor-" + number,
 		Device:            jsonDiscoveryDevice,
 		StateTopic:        prefix + "/RaumTemp",
 		UnitOfMeasurement: "°" + siUnit,
