@@ -140,7 +140,7 @@ func identifier(bridge *bridgeCfg) string {
 }
 
 func setupCloseHandler(bridge *bridgeCfg) {
-	c := make(chan os.Signal)
+	c := make(chan os.Signal, 1) // we need to reserve to buffer size 1, so the notifier are not blocked
 	signal.Notify(c, os.Interrupt, syscall.SIGTERM)
 	go func() {
 		<-c
