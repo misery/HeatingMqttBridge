@@ -69,9 +69,9 @@ type jsonClimateDiscoveryDevice struct {
 }
 
 type jsonClimateAvailability struct {
-	Topic    string `json:"topic"`
-	Avail    string `json:"pl_avail"`
-	NotAvail string `json:"pl_not_avail"`
+	Topic string `json:"topic"`
+	//Avail    string `json:"pl_avail"`
+	//NotAvail string `json:"pl_not_avail"`
 }
 
 type jsonClimateDiscovery struct {
@@ -309,14 +309,14 @@ func publishJSON(bridge *bridgeCfg, number string, name string, siUnit string,
 
 	jsonAvailability := []jsonClimateAvailability{
 		{
-			Topic:    prefix + "/available",
-			Avail:    "online",
-			NotAvail: "offline",
+			Topic: prefix + "/available",
+			//Avail:    "online",
+			//NotAvail: "offline",
 		},
 		{
-			Topic:    bridge.Topic + "/available",
-			Avail:    "online",
-			NotAvail: "offline",
+			Topic: bridge.Topic + "/available",
+			//Avail:    "online",
+			//NotAvail: "offline",
 		}}
 
 	jsonDiscoveryClimate := jsonClimateDiscovery{
