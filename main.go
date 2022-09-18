@@ -30,7 +30,7 @@ import (
 	"encoding/xml"
 	"flag"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"log"
 	"net/http"
 	"net/url"
@@ -186,7 +186,7 @@ func fetch(ip string, values []string, prefix string) content {
 	}
 
 	defer resp.Body.Close()
-	body, err := ioutil.ReadAll(resp.Body)
+	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		log.Println(err)
 		return c
@@ -243,7 +243,7 @@ func propagate(bridge *bridgeCfg, name string, value string, prefix string) bool
 	resp, err := http.Get(url)
 	if err == nil {
 		defer resp.Body.Close()
-		body, _ := ioutil.ReadAll(resp.Body)
+		body, _ := io.ReadAll(resp.Body)
 		bridge.RefreshRoomChannel <- prefix
 		return string(body) == value
 	}
