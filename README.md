@@ -21,6 +21,7 @@ All parameters can be passed via cmdline arguments or via environment variables.
 - ``-polling`` / ``POLLING`` Refresh interval in seconds. (optional, 300 seconds as default)
 - ``-tempchange`` / ``TEMPCHANGE`` Temperature change warning in hours. (optional, 24 hours as default)
 - ``-full`` / ``FULL`` Provide any information to broker, most times this is not necessary. (optional)
+- ``-verbose`` / ``VERBOSE`` Provide more verbose logging. (optional)
 
 
 ## Information

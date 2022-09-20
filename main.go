@@ -131,6 +131,7 @@ type bridgeCfg struct {
 	TempChange          int
 	Topic               string
 	FullInformation     bool
+	Verbose             bool
 	LastNumberOfDevices int
 	SystemInformation   map[string]string
 }
@@ -261,7 +262,6 @@ func checkLastTempChange(bridge *bridgeCfg, number string, value string,
 	}(&deferedState)
 
 	lastChange := lastTempChange[number]
-
 	if lastChange.Temp == value {
 		maxLastChangeTime := lastChange.Time.Add(time.Hour * time.Duration(bridge.TempChange))
 		if time.Now().After(maxLastChangeTime) {
@@ -414,6 +414,7 @@ func refreshRoomInformation(bridge *bridgeCfg, number string) {
 	name := number
 	siUnit := "C"
 	raumTemp := "0"
+	sollTemp := "0"
 	sollTempMin := "0"
 	sollTempMax := "30"
 
@@ -434,6 +435,8 @@ func refreshRoomInformation(bridge *bridgeCfg, number string) {
 			name = value
 		} else if strings.HasSuffix(room, "RaumTemp") {
 			raumTemp = value
+		} else if strings.HasSuffix(room, "SollTemp") {
+			sollTemp = value
 		} else if strings.HasSuffix(room, "TempSIUnit") {
 			siUnit = value
 		} else if strings.HasSuffix(room, "SollTempMinVal") {
@@ -445,6 +448,9 @@ func refreshRoomInformation(bridge *bridgeCfg, number string) {
 
 	checkLastTempChange(bridge, number, raumTemp, sollTempMin, sollTempMax)
 	publishJSON(bridge, number, name, siUnit, sollTempMin, sollTempMax)
+	if bridge.Verbose {
+		log.Println(number, name, "|", raumTemp, "/", sollTemp, "|", lastTempChange[number].Temp, "/", lastTempChange[number].Time)
+	}
 }
 
 func refresh(bridge *bridgeCfg) {
@@ -630,6 +636,7 @@ func createBridge() *bridgeCfg {
 	polling := flag.Int("polling", 300, "Refresh interval in seconds")
 	tempchange := flag.Int("tempchange", 24, "Temperature change warning in hours")
 	full := flag.Bool("full", false, "Provide full information to broker")
+	verbose := flag.Bool("verbose", false, "Provide verbose log information")
 	flag.Parse()
 
 	setStringParam(heating, "HEATING", *env, "", true)
@@ -641,6 +648,7 @@ func createBridge() *bridgeCfg {
 	if *env {
 		setBoolParam(clean, "clean")
 		setBoolParam(full, "full")
+		setBoolParam(verbose, "verbose")
 
 		if !isFlagPassed("polling") {
 			if v, err := strconv.Atoi(os.Getenv("POLLING")); err == nil {
@@ -673,6 +681,7 @@ func createBridge() *bridgeCfg {
 		TempChange:          *tempchange,
 		Topic:               *topic,
 		FullInformation:     *full,
+		Verbose:             *verbose,
 		LastNumberOfDevices: -1,
 		SystemInformation:   make(map[string]string),
 	}
