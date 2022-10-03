@@ -642,8 +642,8 @@ func createBridge() *bridgeCfg {
 	setStringParam(heating, "HEATING", *env, "", true)
 	setStringParam(topic, "TOPIC", *env, "roth", true)
 	setStringParam(broker, "BROKER", *env, "", true)
-	setStringParam(password, "BROKER_USER", *env, "", false)
-	setStringParam(user, "BROKER_PSW", *env, "", false)
+	setStringParam(user, "BROKER_USER", *env, "", false)
+	setStringParam(password, "BROKER_PSW", *env, "", false)
 
 	if *env {
 		setBoolParam(clean, "clean")
