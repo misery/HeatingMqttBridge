@@ -19,7 +19,7 @@ All parameters can be passed via cmdline arguments or via environment variables.
 - ``-topic`` / ``TOPIC`` Topic-Prefix of provided information. (optional, "roth" as default)
 - ``-clean`` / ``CLEAN`` Set clean session for MQTT. (optional)
 - ``-polling`` / ``POLLING`` Refresh interval in seconds. (optional, 300 seconds as default)
-- ``-tempchange`` / ``TEMPCHANGE`` Temperature change warning in hours. (optional, 24 hours as default)
+- ``-tempchange`` / ``TEMPCHANGE`` Temperature change warning in hours. (optional, 12 hours as default)
 - ``-full`` / ``FULL`` Provide any information to broker, most times this is not necessary. (optional)
 - ``-verbose`` / ``VERBOSE`` Provide more verbose logging. (optional)
 

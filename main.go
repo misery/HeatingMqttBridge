@@ -634,7 +634,7 @@ func createBridge() *bridgeCfg {
 	user := flag.String("user", "", "The User (optional)")
 	clean := flag.Bool("clean", false, "Set clean Session")
 	polling := flag.Int("polling", 300, "Refresh interval in seconds")
-	tempchange := flag.Int("tempchange", 24, "Temperature change warning in hours")
+	tempchange := flag.Int("tempchange", 12, "Temperature change warning in hours")
 	full := flag.Bool("full", false, "Provide full information to broker")
 	verbose := flag.Bool("verbose", false, "Provide verbose log information")
 	flag.Parse()
@@ -668,7 +668,7 @@ func createBridge() *bridgeCfg {
 	}
 
 	if *tempchange < 0 {
-		*tempchange = 24
+		*tempchange = 12
 	}
 
 	return &bridgeCfg{
