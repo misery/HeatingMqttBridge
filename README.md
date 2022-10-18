@@ -79,8 +79,8 @@ on ``bridge not running`` or ``no battery``.
 ### Low / no battery detection
 The EnergyLogic has no indicator to show low or no battery on a wireless controller.
 It just stops sending temperature values. So we send a ``Gx/RaumTempLastChange``
-warning if the tempatures of a room has no changes in 24 hours. This is configurable
-with the ``-tempchange`` parameter.
+warning if the tempatures of a room has no changes in specified time (see above).
+This is configurable with the ``-tempchange`` parameter.
 The ``Gx/available`` topic will be switched to offline after that.
 
 ### Auto discovery
