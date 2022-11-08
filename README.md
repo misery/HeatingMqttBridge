@@ -72,7 +72,7 @@ Be aware that ``Gx`` needs a valid room number like ``G0``, ``G1`` and so on.
 ### Available topic
 If this bridge is ``online`` or ``offline`` can be checked with ``available`` topic.
 The topic ``available`` under ``Gx`` indicates "no battery detection". This bridges
-exposes both ``available`` topics to home assistant auto discovery. So all ``availabe``
+exposes both ``available`` topics to home assistant auto discovery. So all ``available``
 needs to be ``online``. Otherwise all or a single climate is ``N/A``. This depends
 on ``bridge not running`` or ``no battery``.
 
