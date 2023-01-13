@@ -32,6 +32,7 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"net"
 	"net/http"
 	"net/url"
 	"os"
@@ -42,6 +43,7 @@ import (
 	"time"
 
 	MQTT "github.com/eclipse/paho.mqtt.golang"
+	DNS "github.com/ncruces/go-dns"
 )
 
 var bridge *bridgeCfg
@@ -636,6 +638,7 @@ func createBridge() *bridgeCfg {
 	polling := flag.Int("polling", 300, "Refresh interval in seconds")
 	tempchange := flag.Int("tempchange", 12, "Temperature change warning in hours")
 	full := flag.Bool("full", false, "Provide full information to broker")
+	dnsCache := flag.Bool("dns", true, "Use internal DNS cache")
 	verbose := flag.Bool("verbose", false, "Provide verbose log information")
 	flag.Parse()
 
@@ -648,6 +651,7 @@ func createBridge() *bridgeCfg {
 	if *env {
 		setBoolParam(clean, "clean")
 		setBoolParam(full, "full")
+		setBoolParam(dnsCache, "dns")
 		setBoolParam(verbose, "verbose")
 
 		if !isFlagPassed("polling") {
@@ -669,6 +673,11 @@ func createBridge() *bridgeCfg {
 
 	if *tempchange < 0 {
 		*tempchange = 12
+	}
+
+	if *dnsCache {
+		log.Println("Use internal DNS cache")
+		net.DefaultResolver = DNS.NewCachingResolver(net.DefaultResolver)
 	}
 
 	return &bridgeCfg{
