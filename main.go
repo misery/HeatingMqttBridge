@@ -132,6 +132,7 @@ type bridgeCfg struct {
 	Polling             int
 	TempChange          int
 	Topic               string
+	Sensor              bool
 	FullInformation     bool
 	Verbose             bool
 	LastNumberOfDevices int
@@ -339,25 +340,7 @@ func publishJSON(bridge *bridgeCfg, number string, name string, siUnit string,
 		Modes:     []string{"off", "heat"},
 	}
 
-	jsonDiscoverySensor := jsonSensorDiscovery{
-		Name:              name,
-		Avty:              jsonAvailability,
-		AvtyMode:          "all",
-		UniqueID:          id + "-sensor-" + number,
-		Device:            jsonDiscoveryDevice,
-		StateTopic:        prefix + "/RaumTemp",
-		UnitOfMeasurement: "°" + siUnit,
-		StateClass:        "measurement",
-		DeviceClass:       "temperature",
-	}
-
 	climateValueJSON, err := json.Marshal(jsonDiscoveryClimate)
-	if err != nil {
-		log.Println(err)
-		return
-	}
-
-	sensorValueJSON, err := json.Marshal(jsonDiscoverySensor)
 	if err != nil {
 		log.Println(err)
 		return
@@ -366,8 +349,28 @@ func publishJSON(bridge *bridgeCfg, number string, name string, siUnit string,
 	climateTopic := "homeassistant/climate/" + id + "/" + number + "/config"
 	publish(bridge, climateTopic, string(climateValueJSON), false)
 
-	sensorTopic := "homeassistant/sensor/" + id + "/" + number + "/config"
-	publish(bridge, sensorTopic, string(sensorValueJSON), false)
+	if bridge.Sensor {
+		jsonDiscoverySensor := jsonSensorDiscovery{
+			Name:              name,
+			Avty:              jsonAvailability,
+			AvtyMode:          "all",
+			UniqueID:          id + "-sensor-" + number,
+			Device:            jsonDiscoveryDevice,
+			StateTopic:        prefix + "/RaumTemp",
+			UnitOfMeasurement: "°" + siUnit,
+			StateClass:        "measurement",
+			DeviceClass:       "temperature",
+		}
+
+		sensorValueJSON, err := json.Marshal(jsonDiscoverySensor)
+		if err != nil {
+			log.Println(err)
+			return
+		}
+
+		sensorTopic := "homeassistant/sensor/" + id + "/" + number + "/config"
+		publish(bridge, sensorTopic, string(sensorValueJSON), false)
+	}
 }
 
 func refreshSystemInformation(bridge *bridgeCfg) int {
@@ -638,6 +641,7 @@ func createBridge() *bridgeCfg {
 	polling := flag.Int("polling", 300, "Refresh interval in seconds")
 	tempchange := flag.Int("tempchange", 12, "Temperature change warning in hours")
 	full := flag.Bool("full", false, "Provide full information to broker")
+	sensor := flag.Bool("sensor", true, "Send additional sensor entity")
 	dnsCache := flag.Bool("dns", true, "Use internal DNS cache")
 	verbose := flag.Bool("verbose", false, "Provide verbose log information")
 	flag.Parse()
@@ -651,6 +655,7 @@ func createBridge() *bridgeCfg {
 	if *env {
 		setBoolParam(clean, "clean")
 		setBoolParam(full, "full")
+		setBoolParam(sensor, "sensor")
 		setBoolParam(dnsCache, "dns")
 		setBoolParam(verbose, "verbose")
 
@@ -689,6 +694,7 @@ func createBridge() *bridgeCfg {
 		Polling:             *polling,
 		TempChange:          *tempchange,
 		Topic:               *topic,
+		Sensor:              *sensor,
 		FullInformation:     *full,
 		Verbose:             *verbose,
 		LastNumberOfDevices: -1,
