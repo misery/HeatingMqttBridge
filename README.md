@@ -15,13 +15,14 @@ All parameters can be passed via cmdline arguments or via environment variables.
 - ``-broker`` / ``BROKER`` IP or hostname with port of your MQTT broker. (*example: 192.168.1.2:1883*) (**required**)
 - ``-user`` / ``BROKER_USER`` Username of your MQTT broker. (optional)
 - ``-password`` / ``BROKER_PSW`` Password of your MQTT broker. (optional)
-- ``-topic`` / ``TOPIC`` Topic-Prefix of provided information. (optional, "roth" as default)
-- ``-clean`` / ``CLEAN`` Set clean session for MQTT. (optional)
-- ``-polling`` / ``POLLING`` Refresh interval in seconds. (optional, 300 seconds as default)
-- ``-tempchange`` / ``TEMPCHANGE`` Temperature change warning in hours. (optional, 12 hours as default)
-- ``-full`` / ``FULL`` Provide any information to broker, most times this is not necessary. (optional)
+- ``-topic`` / ``TOPIC`` Topic-Prefix of provided information. (optional, default: "roth")
+- ``-clean`` / ``CLEAN`` Set clean session for MQTT. (optional, default: false)
+- ``-polling`` / ``POLLING`` Refresh interval in seconds. (optional, default: 300 seconds)
+- ``-tempchange`` / ``TEMPCHANGE`` Temperature change warning in hours. (optional, default: 12 hours)
+- ``-sensor`` / ``SENSOR`` Send additional sensor entity. (optional, default: true)
+- ``-full`` / ``FULL`` Provide any information to broker, most times this is not necessary. (optional, default: false)
 - ``-dns`` / ``DNS`` Use internal DNS cache. (optional, default: true)
-- ``-verbose`` / ``VERBOSE`` Provide more verbose logging. (optional)
+- ``-verbose`` / ``VERBOSE`` Provide more verbose logging. (optional, default: false)
 
 
 ## Information
