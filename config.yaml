@@ -1,0 +1,39 @@
+name: "Heating Mqtt Bridge"
+description: "This tiny bridge polls the central station of Roth EnergyLogic and pushes all information to an Mqtt broker"
+version: "1.4"
+url: "https://github.com/misery/HeatingMqttBridge/"
+slug: "roth2mqtt"
+init: false
+legacy: true
+startup: "application"
+services:
+  - mqtt:need
+arch:
+  - aarch64
+  - amd64
+  - armhf
+  - armv7
+  - i386
+image: "aklitzing/heatingmqttbridge"
+options:
+  HEATING: null
+  BROKER: null
+  BROKER_USER: ""
+  BROKER_PSW: ""
+  TOPIC: "roth"
+  CLEAN: false
+  TEMPCHANGE: 12
+  POLLING: 300
+  SENSOR: true
+  VERBOSE: false
+schema:
+  HEATING: str
+  BROKER: str
+  BROKER_USER: str?
+  BROKER_PSW: str?
+  TOPIC: str
+  TEMPCHANGE: int
+  CLEAN: bool
+  POLLING: int
+  SENSOR: bool
+  VERBOSE: bool

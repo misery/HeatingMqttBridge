@@ -92,3 +92,5 @@ You can run this bridge in a container with Docker.
 
 ``docker run --rm --name heating -e HEATING=192.168.1.3 -e BROKER=192.168.1.2:1883 aklitzing/heatingmqttbridge``
 
+Also you can use this repository as an AddOn in HomeAssistant.
+  Add-On Store > Repositories > Add repository
