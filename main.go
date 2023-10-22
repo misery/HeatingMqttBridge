@@ -31,7 +31,6 @@ import (
 	"flag"
 	"fmt"
 	"io"
-	"log"
 	"net"
 	"net/http"
 	"net/url"
@@ -41,6 +40,9 @@ import (
 	"strings"
 	"syscall"
 	"time"
+
+	"github.com/rs/zerolog"
+	"github.com/rs/zerolog/log"
 
 	MQTT "github.com/eclipse/paho.mqtt.golang"
 	DNS "github.com/ncruces/go-dns"
@@ -134,7 +136,6 @@ type bridgeCfg struct {
 	Topic               string
 	Sensor              bool
 	FullInformation     bool
-	Verbose             bool
 	LastNumberOfDevices int
 	SystemInformation   map[string]string
 }
@@ -185,21 +186,20 @@ func fetch(ip string, values []string, prefix string) content {
 
 	resp, err := http.Post(url, "text/xml", bytes.NewBuffer([]byte(xmlValue)))
 	if err != nil {
-		log.Println(err)
+		log.Error().Err(err).Msg("Cannot fetch data")
 		return c
 	}
 
 	defer resp.Body.Close()
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		log.Println(err)
+		log.Error().Err(err).Bytes("body", body).Msg("Cannot read body")
 		return c
 	}
 
 	err = xml.Unmarshal(body, &c)
 	if err != nil {
-		log.Println(err)
-		log.Println(string(body))
+		log.Error().Err(err).Bytes("body", body).Msg("Cannot parse body")
 		return c
 	}
 
@@ -213,14 +213,14 @@ func checkTemperatureSanity(prefix string, value string) bool {
 		return userValue <= lastChange.MaxTemp && userValue >= lastChange.MinTemp
 	}
 
-	log.Println("Cannot convert compare values:", value, lastChange.MinTemp, lastChange.MaxTemp)
+	log.Error().Str("value", value).Float64("minTemp", lastChange.MinTemp).Float64("maxTemp", lastChange.MaxTemp).Msg("Cannot convert compare values")
 	return false
 }
 
 func propagate(bridge *bridgeCfg, name string, value string, prefix string) bool {
 	if stringSuffixInSlice(name, roomFieldsTemperature) {
 		if !checkTemperatureSanity(prefix, value) {
-			log.Println("Propagate canceled | Value is not valid:", value)
+			log.Error().Str("value", value).Msg("Propagate canceled | Value is not valid")
 			return false
 		}
 
@@ -243,7 +243,7 @@ func propagate(bridge *bridgeCfg, name string, value string, prefix string) bool
 	data := prefix + "." + name + "=" + url.QueryEscape(value)
 	url := "http://" + bridge.HeatingURL + "/cgi-bin/writeVal.cgi?" + data
 
-	log.Println("Propagate:", data)
+	log.Info().Str("data", data).Msg("Propagate")
 	resp, err := http.Get(url)
 	if err == nil {
 		defer resp.Body.Close()
@@ -252,7 +252,7 @@ func propagate(bridge *bridgeCfg, name string, value string, prefix string) bool
 		return string(body) == value
 	}
 
-	log.Println(err)
+	log.Error().Err(err).Msg("Propagate failed")
 	return false
 }
 
@@ -268,7 +268,7 @@ func checkLastTempChange(bridge *bridgeCfg, number string, value string,
 	if lastChange.Temp == value {
 		maxLastChangeTime := lastChange.Time.Add(time.Hour * time.Duration(bridge.TempChange))
 		if time.Now().After(maxLastChangeTime) {
-			log.Println("No temperature change:", number)
+			log.Info().Str("room", number).Msg("No temperature change")
 			deferedState = "offline"
 			publish(bridge, prefix+"/RaumTempLastChange", lastChange.Time.String(), false)
 		}
@@ -289,7 +289,7 @@ func publish(bridge *bridgeCfg, topic string, value string, retained bool) {
 	token := bridge.Client.Publish(topic, 0, retained, value)
 	token.Wait()
 	if token.Error() != nil {
-		log.Println(token.Error())
+		log.Error().Err(token.Error()).Str("value", value).Str("topic", topic).Msg("Cannot publish value")
 	}
 }
 
@@ -342,7 +342,7 @@ func publishJSON(bridge *bridgeCfg, number string, name string, siUnit string,
 
 	climateValueJSON, err := json.Marshal(jsonDiscoveryClimate)
 	if err != nil {
-		log.Println(err)
+		log.Error().Err(err).Msg("Cannot marshal climate discovery")
 		return
 	}
 
@@ -364,7 +364,7 @@ func publishJSON(bridge *bridgeCfg, number string, name string, siUnit string,
 
 		sensorValueJSON, err := json.Marshal(jsonDiscoverySensor)
 		if err != nil {
-			log.Println(err)
+			log.Error().Err(err).Msg("Cannot marshal sensor discovery")
 			return
 		}
 
@@ -453,9 +453,7 @@ func refreshRoomInformation(bridge *bridgeCfg, number string) {
 
 	checkLastTempChange(bridge, number, raumTemp, sollTempMin, sollTempMax)
 	publishJSON(bridge, number, name, siUnit, sollTempMin, sollTempMax)
-	if bridge.Verbose {
-		log.Println(number, name, "|", raumTemp, "/", sollTemp, "|", lastTempChange[number].Temp, "/", lastTempChange[number].Time)
-	}
+	log.Debug().Str("name", name).Str("raumTemp", raumTemp).Str("sollTemp", sollTemp).Time("tempChange", lastTempChange[number].Time).Msg(number)
 }
 
 func refresh(bridge *bridgeCfg) {
@@ -464,7 +462,7 @@ func refresh(bridge *bridgeCfg) {
 
 	if bridge.LastNumberOfDevices == -1 {
 		bridge.LastNumberOfDevices = 0 // initialized!
-		log.Println("Host:", identifier(bridge))
+		log.Info().Msgf("Host: %s", identifier(bridge))
 		listenStateHA(bridge)
 	}
 
@@ -472,7 +470,7 @@ func refresh(bridge *bridgeCfg) {
 		firstNewDevice := totalNumberOfDevices - (totalNumberOfDevices - bridge.LastNumberOfDevices)
 		for i := firstNewDevice; i < totalNumberOfDevices; i++ {
 			prefix := fmt.Sprint("G", i)
-			log.Println("Add room:", prefix)
+			log.Info().Msgf("Add room: %s", prefix)
 			for _, name := range roomSetFields {
 				topic := fmt.Sprint(bridge.Topic, "/", prefix, "/set/", name)
 				listen(bridge, topic)
@@ -484,7 +482,7 @@ func refresh(bridge *bridgeCfg) {
 	} else if totalNumberOfDevices < bridge.LastNumberOfDevices {
 		for i := totalNumberOfDevices; i < bridge.LastNumberOfDevices; i++ {
 			prefix := fmt.Sprint("G", i)
-			log.Println("Remove room:", prefix)
+			log.Info().Msgf("Remove room: %s", prefix)
 			for _, name := range roomSetFields {
 				topic := fmt.Sprint(bridge.Topic, "/", prefix, "/set/", name)
 				bridge.Client.Unsubscribe(topic)
@@ -524,7 +522,7 @@ func listen(bridge *bridgeCfg, topic string) {
 }
 
 func running(bridge *bridgeCfg) {
-	log.Println("Running...")
+	log.Debug().Msg("Running...")
 	ticker := time.NewTicker(time.Duration(bridge.Polling) * time.Second)
 
 	go func() {
@@ -566,19 +564,19 @@ func running(bridge *bridgeCfg) {
 }
 
 func attemptHandler(broker *url.URL, tlsCfg *tls.Config) *tls.Config {
-	log.Println("Connecting...", broker)
+	log.Debug().Stringer("broker", broker).Msg("Connecting...")
 	return tlsCfg
 }
 
 func connectHandler(client MQTT.Client) {
-	log.Println("Connected")
+	log.Debug().Msg("Connected")
 	// just reset if connection was lost
 	bridge.LastNumberOfDevices = -1
 	bridge.RefreshRoomChannel <- ""
 }
 
 func connectLostHandler(client MQTT.Client, err error) {
-	log.Println("Connection lost", err)
+	log.Warn().Err(err).Msg("Connection lost")
 }
 
 func createClientOptions(broker string, user string, password string, cleansess bool, topic string) *MQTT.ClientOptions {
@@ -607,8 +605,7 @@ func setStringParam(param *string, envName string, useEnv bool, defaultValue str
 	}
 
 	if required && *param == "" {
-		log.Println(envName, "is undefined")
-		os.Exit(1)
+		log.Fatal().Msgf("%s is not defined", envName)
 	}
 }
 
@@ -681,8 +678,13 @@ func createBridge() *bridgeCfg {
 	}
 
 	if *dnsCache {
-		log.Println("Use internal DNS cache")
+		log.Debug().Msg("Use internal DNS cache")
 		net.DefaultResolver = DNS.NewCachingResolver(net.DefaultResolver)
+	}
+
+	zerolog.SetGlobalLevel(zerolog.InfoLevel)
+	if *verbose {
+		zerolog.SetGlobalLevel(zerolog.DebugLevel)
 	}
 
 	return &bridgeCfg{
@@ -696,7 +698,6 @@ func createBridge() *bridgeCfg {
 		Topic:               *topic,
 		Sensor:              *sensor,
 		FullInformation:     *full,
-		Verbose:             *verbose,
 		LastNumberOfDevices: -1,
 		SystemInformation:   make(map[string]string),
 	}
@@ -740,12 +741,18 @@ func setFields() {
 	roomSetFields = []string{"name", "OPMode", "SollTemp"}
 }
 
+func setLogger() {
+	zerolog.TimeFieldFormat = time.DateTime
+	log.Logger = log.Output(zerolog.ConsoleWriter{Out: os.Stdout, TimeFormat: zerolog.TimeFieldFormat})
+}
+
 func main() {
+	setLogger()
 	bridge = createBridge()
 	setupCloseHandler(bridge)
 
 	if token := bridge.Client.Connect(); token.Wait() && token.Error() != nil {
-		log.Println(token.Error())
+		log.Fatal().Err(token.Error()).Msg("Cannot connect to broker")
 	} else {
 		setFields()
 		go running(bridge)
