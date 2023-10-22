@@ -1,6 +1,6 @@
 name: "Heating Mqtt Bridge"
 description: "This tiny bridge polls the central station of Roth EnergyLogic and pushes all information to an Mqtt broker"
-version: "1.5"
+version: "1.6"
 url: "https://github.com/misery/HeatingMqttBridge/"
 slug: "roth2mqtt"
 init: false
