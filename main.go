@@ -238,6 +238,12 @@ func propagate(bridge *bridgeCfg, name string, value string, prefix string) bool
 		} else if strings.EqualFold(value, "off") {
 			value = "2"
 		}
+	} else if stringSuffixInSlice(name, []string{"TempSIUnit"}) {
+		if strings.EqualFold(value, "C") {
+			value = "0"
+		} else if strings.EqualFold(value, "F") {
+			value = "1"
+		}
 	}
 
 	data := prefix + "." + name + "=" + url.QueryEscape(value)
@@ -417,7 +423,7 @@ func refreshRoomInformation(bridge *bridgeCfg, number string) {
 	c := fetch(bridge.HeatingURL, roomFields, number+".")
 
 	name := number
-	siUnit := "C"
+	siUnit := "0"
 	raumTemp := "0"
 	sollTemp := "0"
 	sollTempMin := "0"
@@ -443,6 +449,9 @@ func refreshRoomInformation(bridge *bridgeCfg, number string) {
 		} else if strings.HasSuffix(room, "SollTemp") {
 			sollTemp = value
 		} else if strings.HasSuffix(room, "TempSIUnit") {
+			if value == "" {
+				log.Warn().Msgf("TempSIUnit of %s is undefined. Use %s/set/%s", number, bridge.Topic, room)
+			}
 			siUnit = value
 		} else if strings.HasSuffix(room, "SollTempMinVal") {
 			sollTempMin = value
@@ -738,7 +747,7 @@ func setFields() {
 
 	roomFields = append(roomFields, roomFieldsTemperature...)
 
-	roomSetFields = []string{"name", "OPMode", "SollTemp"}
+	roomSetFields = []string{"name", "OPMode", "SollTemp", "TempSIUnit"}
 }
 
 func setLogger() {

@@ -65,6 +65,7 @@ Be aware that ``Gx`` needs a valid room number like ``G0``, ``G1`` and so on.
 
 - ``name`` settable via ``Gx/set/name``. This changes the room name.
 - ``SollTemp`` settable via ``Gx/set/SollTemp``. This changes the target temperature.
+- ``TempSIUnit`` settable via ``Gx/set/TempSIUnit``. This changes the temperature scale.
 - ``OPMode`` settable via ``Gx/set/OPMode``. This changes heating mode for this device.
   - ``0`` Day (normally **On**)
   - ``1`` Night
