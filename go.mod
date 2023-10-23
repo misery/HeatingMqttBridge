@@ -1,8 +1,7 @@
 module github.com/misery/HeatingMqttBridge
 
-require github.com/eclipse/paho.mqtt.golang v1.4.3
-
 require (
+	github.com/eclipse/paho.mqtt.golang v1.4.3
 	github.com/ncruces/go-dns v1.2.4
 	github.com/rs/zerolog v1.31.0
 )
