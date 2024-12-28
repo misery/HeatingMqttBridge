@@ -1,3 +1,5 @@
 HeatingMqttBridge
 dist
 .vscode
+
+dist/
