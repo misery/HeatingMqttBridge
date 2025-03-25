@@ -303,9 +303,10 @@ func publishJSON(bridge *bridgeCfg, number string, name string, siUnit string,
 	sollTempMin string, sollTempMax string) {
 	id := identifier(bridge)
 	prefix := bridge.Topic + "/" + number
-	if siUnit == "0" {
+	switch siUnit {
+	case "0":
 		siUnit = "C"
-	} else if siUnit == "1" {
+	case "1":
 		siUnit = "F"
 	}
 
@@ -436,9 +437,10 @@ func refreshRoomInformation(bridge *bridgeCfg, number string) {
 		publish(bridge, t, value, true)
 
 		if strings.HasSuffix(room, "OPMode") {
-			if value == "0" {
+			switch value {
+			case "0":
 				value = "heat"
-			} else if value == "2" {
+			case "2":
 				value = "off"
 			}
 			publish(bridge, t+"_mode", value, true)
