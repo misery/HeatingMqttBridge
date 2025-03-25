@@ -228,7 +228,7 @@ func propagate(bridge *bridgeCfg, name string, value string, prefix string) bool
 			value = value[:5] // cut off 20.123456789
 		}
 
-		value = strings.Replace(value, ".", "", -1)
+		value = strings.ReplaceAll(value, ".", "")
 		for i := len(value); i < 4; i++ {
 			value += "0"
 		}
@@ -309,7 +309,7 @@ func publishJSON(bridge *bridgeCfg, number string, name string, siUnit string,
 		siUnit = "F"
 	}
 
-	mac := strings.Replace(bridge.SystemInformation["hw.Addr"], "-", ":", -1)
+	mac := strings.ReplaceAll(bridge.SystemInformation["hw.Addr"], "-", ":")
 	jsonDiscoveryDevice := jsonClimateDiscoveryDevice{
 		Identifier: id,
 		Name:       id,
@@ -402,7 +402,7 @@ func refreshSystemInformation(bridge *bridgeCfg) int {
 
 		bridge.SystemInformation[c.Entries[i].Name] = c.Entries[i].Value
 
-		name := strings.Replace(c.Entries[i].Name, ".", "/", -1)
+		name := strings.ReplaceAll(c.Entries[i].Name, ".", "/")
 		t := fmt.Sprint(bridge.Topic, "/", name)
 		publish(bridge, t, c.Entries[i].Value, false)
 	}
@@ -430,7 +430,7 @@ func refreshRoomInformation(bridge *bridgeCfg, number string) {
 	sollTempMax := "30"
 
 	for i := 0; i < len(c.Entries); i++ {
-		room := strings.Replace(c.Entries[i].Name, ".", "/", -1)
+		room := strings.ReplaceAll(c.Entries[i].Name, ".", "/")
 		t := fmt.Sprint(bridge.Topic, "/", room)
 		value := fetchTemperature(room, c.Entries[i].Value)
 		publish(bridge, t, value, true)
