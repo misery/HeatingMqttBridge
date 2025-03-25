@@ -518,7 +518,7 @@ func listenStateHA(bridge *bridgeCfg) {
 func listen(bridge *bridgeCfg, topic string) {
 	bridge.Client.Subscribe(topic, 0, func(client MQTT.Client, msg MQTT.Message) {
 		payload := string(msg.Payload())
-		splitted := strings.SplitN(msg.Topic(), "/", -1)
+		splitted := strings.Split(msg.Topic(), "/")
 		if len(splitted) > 3 {
 			event := writeEvent{
 				Prefix: splitted[len(splitted)-3],
