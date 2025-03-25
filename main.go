@@ -190,7 +190,7 @@ func fetch(ip string, values []string, prefix string) content {
 		return c
 	}
 
-	defer resp.Body.Close()
+	defer resp.Body.Close() //nolint:errcheck
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		log.Error().Err(err).Bytes("body", body).Msg("Cannot read body")
@@ -252,7 +252,7 @@ func propagate(bridge *bridgeCfg, name string, value string, prefix string) bool
 	log.Info().Str("data", data).Msg("Propagate")
 	resp, err := http.Get(url)
 	if err == nil {
-		defer resp.Body.Close()
+		defer resp.Body.Close() //nolint:errcheck
 		body, _ := io.ReadAll(resp.Body)
 		bridge.RefreshRoomChannel <- prefix
 		return string(body) == value
