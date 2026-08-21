@@ -1,6 +1,5 @@
 [![MIT License](https://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/misery/HeatingMqttBridge/blob/main/LICENSE)
 [![Docker pulls](https://img.shields.io/docker/pulls/aklitzing/heatingmqttbridge.svg)](https://hub.docker.com/r/aklitzing/heatingmqttbridge/)
-[![Go Report Card](https://goreportcard.com/badge/github.com/misery/HeatingMqttBridge)](https://goreportcard.com/report/github.com/misery/HeatingMqttBridge)
 
 # Heating Mqtt Bridge
 This tiny bridge polls the central station of Roth EnergyLogic and
